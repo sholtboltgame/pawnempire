@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pawn Empire - Pawn Shop Simulation</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --panel-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --accent-green: #22c55e;
+            --accent-green-hover: #16a34a;
+            --accent-red: #ef4444;
+            --accent-red-hover: #dc2626;
+            --accent-yellow: #eab308;
+            --accent-yellow-hover: #ca8a04;
+        }
+
+        html {
+            font-size: 100%; /* Default scale */
+            transition: font-size 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- HEADER (TOP BAR) --- */
+        header {
+            background-color: var(--panel-bg);
+            border-bottom: 2px solid var(--panel-border);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .stat-group {
+            display: flex;
+            gap: 30px;
+        }
+
+        .stat-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+        }
+
+        #cash-display { color: var(--accent-green); }
+        #value-display { color: var(--accent-blue); }
+        #day-display { color: var(--accent-yellow); }
+
+        /* --- MAIN LAYOUT --- */
+        main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .left-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+            gap: 20px;
+        }
+
+        .right-col {
+            width: 400px;
+            background-color: var(--panel-bg);
+            border-left: 2px solid var(--panel-border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: hidden;
+        }
+
+        /* --- DESK / CUSTOMER AREA --- */
+        .desk-area {
+            background: linear-gradient(145deg, #1e293b, #111827);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .desk-title {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .customer-avatar {
+            font-size: 4rem;
+            margin-bottom: 5px;
+            animation: bounceIn 0.5s ease-out;
+        }
+        
+        .customer-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-yellow);
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px black;
+            z-index: 10;
+            position: relative;
+        }
+
+        .dialogue-box {
+            background-color: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            max-width: 80%;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .highlight { color: var(--accent-yellow); font-weight: bold; }
+        .price-tag { color: var(--accent-green); font-weight: bold; }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        button:active:not(:disabled) { transform: scale(0.95); }
+
+        .btn-primary { background-color: var(--accent-blue); }
+        .btn-primary:hover:not(:disabled) { background-color: var(--accent-blue-hover); }
+        
+        .btn-success { background-color: var(--accent-green); }
+        .btn-success:hover:not(:disabled) { background-color: var(--accent-green-hover); }
+        
+        .btn-danger { background-color: var(--accent-red); }
+        .btn-danger:hover:not(:disabled) { background-color: var(--accent-red-hover); }
+
+        .btn-warning { background-color: var(--accent-yellow); color: #000; }
+        .btn-warning:hover:not(:disabled) { background-color: var(--accent-yellow-hover); }
+
+        /* --- INVENTORY --- */
+        .inventory-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-header {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .item-card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border-color: var(--accent-blue);
+        }
+
+        .item-pawn-tag {
+            position: absolute; top: -10px; right: -10px; background: var(--accent-red); color: white;
+            padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .item-name { font-weight: bold; font-size: 1.1rem; }
+        .item-cond { font-size: 0.85rem; color: var(--text-muted); }
+        .item-cost { font-size: 0.9rem; }
+        .item-cost span { color: var(--accent-red); font-weight: bold; }
+        
+        .price-input-group {
+            display: flex;
+            margin-top: auto;
+            gap: 5px;
+        }
+
+        .price-input {
+            flex: 1;
+            background-color: var(--bg-color);
+            border: 1px solid var(--panel-border);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            outline: none;
+            width: 100%;
+        }
+        
+        .price-input:focus { border-color: var(--accent-blue); }
+
+        /* --- NEW ITEM DETAILS & HAGGLE UI --- */
+        .item-inspection {
+            background-color: rgba(0,0,0,0.3);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-align: left;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .item-inspection-icon {
+            font-size: 3rem;
+            background: var(--panel-bg);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            line-height: 1;
+        }
+        .item-inspection-details {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 0.95rem;
+        }
+        .haggle-box {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            width: 100%;
+            justify-content: center;
+        }
+        .haggle-input {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--accent-yellow);
+            background-color: var(--bg-color);
+            color: white;
+            font-size: 1rem;
+            width: 150px;
+            outline: none;
+        }
+
+        /* --- LEADERBOARD & DATABASE (RIGHT COL) --- */
+        .right-col-tabs {
+            display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid var(--panel-border); padding-bottom: 10px;
+        }
+        .rtab-btn {
+            flex: 1; background: transparent; border: none; color: var(--text-muted); font-size: 0.9rem; padding: 10px; border-radius: 6px; cursor: pointer; transition: 0.2s;
+        }
+        .rtab-btn.active { background: var(--bg-color); color: var(--accent-blue); font-weight: bold; }
+        
+        .rview { display: none; flex-direction: column; flex: 1; overflow-y: hidden; }
+        .rview.active { display: flex; }
+
+        .leaderboard-title {
+            font-size: 1.2rem; text-align: center; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        .lb-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding-right: 5px; }
+
+        .lb-item {
+            display: flex; justify-content: space-between; align-items: center; padding: 12px 15px;
+            background-color: var(--bg-color); border-radius: 6px; font-size: 0.95rem; transition: all 0.3s ease;
+        }
+        .lb-item.player-row { background-color: rgba(59, 130, 246, 0.2); border: 1px solid var(--accent-blue); font-weight: bold; }
+        .lb-rank { width: 25px; color: var(--text-muted); font-weight: bold; }
+        .lb-item:nth-child(1) .lb-rank { color: #fbbf24; } 
+        .lb-item:nth-child(2) .lb-rank { color: #94a3b8; } 
+        .lb-item:nth-child(3) .lb-rank { color: #b45309; } 
+        .lb-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lb-val { color: var(--accent-green); font-weight: bold; }
+
+        /* Computer Database */
+        .db-search-box {
+            width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--accent-blue);
+            background: var(--bg-color); color: white; margin-bottom: 15px; outline: none;
+        }
+        .db-table-container { flex: 1; overflow-y: auto; border: 1px solid var(--panel-border); border-radius: 6px; }
+        .db-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left; }
+        .db-table th { background: #0f172a; position: sticky; top: 0; padding: 8px; border-bottom: 1px solid var(--panel-border); color: var(--text-muted); }
+        .db-table td { padding: 8px; border-bottom: 1px solid var(--panel-border); }
+        .db-table tr:hover { background: rgba(255,255,255,0.05); }
+        
+        .status-badge { padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; display: inline-block; }
+        .status-aktif { background: rgba(234, 179, 8, 0.2); color: var(--accent-yellow); }
+        .status-geri { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
+        .status-elkonuldu { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+        .status-erken { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+
+        /* --- MODALS --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.8);
+            display: flex; justify-content: center; align-items: center; z-index: 999;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background-color: var(--panel-bg); border: 2px solid var(--panel-border); border-radius: 12px;
+            padding: 30px; width: 400px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transform: scale(0.8); transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-title { font-size: 1.5rem; margin-bottom: 15px; }
+        .modal-text { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; }
+        .expense-text { color: var(--accent-red); font-weight: bold; font-size: 1.2rem; margin: 15px 0; display: block; }
+
+        /* --- PARTICLES --- */
+        .particle {
+            position: absolute; font-weight: bold; font-size: 1.2rem; pointer-events: none; z-index: 50;
+            animation: floatUp 1.2s ease-out forwards; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .particle.positive { color: var(--accent-green); }
+        .particle.negative { color: var(--accent-red); }
+
+        /* --- SETUP & DASHBOARD UI --- */
+        .setup-input, .settings-select {
+            width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 6px;
+            border: 2px solid var(--panel-border); background: var(--bg-color); color: white;
+            font-size: 1.1rem; outline: none; transition: border-color 0.3s;
+        }
+        .setup-input:focus, .settings-select:focus { border-color: var(--accent-blue); }
+        .setup-label { display: block; text-align: left; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem; }
+        
+        .dashboard-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;
+        }
+        .dash-card {
+            background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px;
+            padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .dash-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .dash-title { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .dash-val { font-size: 1.8rem; font-weight: bold; color: white; margin-top: 5px; }
+        .val-green { color: var(--accent-green); }
+        .val-yellow { color: var(--accent-yellow); }
+
+        .employee-panel {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(15, 23, 42, 0.8));
+            border: 1px solid var(--accent-blue); border-radius: 12px; padding: 25px;
+            display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px;
+        }
+        .employee-info { flex: 1; }
+
+        /* --- ENHANCED MAIN MENU --- */
+        #main-menu {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 200; overflow: hidden;
+        }
+        
+        .menu-bg-grid {
+            position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px; transform: perspective(500px) rotateX(60deg);
+            animation: gridMove 15s linear infinite; z-index: 1;
+        }
+        @keyframes gridMove { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(50px); } }
+        
+        .floating-items { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+        .f-item { position: absolute; font-size: 3rem; animation: floatAnim 10s infinite ease-in-out alternate; opacity: 0.15; filter: blur(2px); }
+        @keyframes floatAnim { 0% { transform: translateY(0) rotate(0deg); } 100% { transform: translateY(-100px) rotate(360deg); } }
+
+        .menu-content {
+            position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center;
+            background: rgba(15, 23, 42, 0.65); padding: 60px 80px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px); text-align: center;
+        }
+
+        .menu-title { 
+            font-size: 5.5rem; color: #fbbf24; margin-bottom: 10px; 
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.6), 0 0 40px rgba(251, 191, 36, 0.4), 3px 3px 0px #b45309; 
+            font-weight: 900; letter-spacing: 3px; text-transform: uppercase;
+        }
+        
+        .menu-subtitle { color: var(--text-muted); margin-bottom: 50px; font-size: 1.5rem; letter-spacing: 2px; }
+
+        .btn-play {
+            background: linear-gradient(45deg, #eab308, #d97706); border: none; padding: 20px 60px; border-radius: 50px; font-size: 1.6rem; font-weight: bold;
+            color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); cursor: pointer;
+            box-shadow: 0 10px 20px rgba(217, 119, 6, 0.4), inset 0 -3px 0 rgba(0,0,0,0.2);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 15px;
+        }
+        .btn-play:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 15px 25px rgba(217, 119, 6, 0.6), inset 0 -3px 0 rgba(0,0,0,0.2); }
+        .btn-play:active { transform: translateY(2px) scale(0.95); box-shadow: 0 5px 10px rgba(217, 119, 6, 0.4); }
+
+        #game-ui { display: none; flex-direction: column; height: 100vh; width: 100%; }
+        
+        .top-nav {
+            background-color: var(--panel-bg); padding: 10px 30px; display: flex; gap: 15px;
+            border-bottom: 2px solid var(--panel-border); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); z-index: 9;
+        }
+        .nav-btn {
+            background: transparent; border: 1px solid transparent; color: var(--text-muted);
+            padding: 8px 16px; font-size: 1rem; cursor: pointer; border-radius: 6px; transition: all 0.2s;
+        }
+        .nav-btn:hover { background: var(--bg-color); color: white; }
+        .nav-btn.active { background: var(--bg-color); color: var(--accent-blue); border-color: var(--accent-blue); font-weight: bold; }
+
+        .view-panel { display: none; flex: 1; flex-direction: column; overflow-y: auto; padding: 20px; }
+        .view-panel.active { display: flex; }
+
+        /* Shop Interior */
+        .shop-interior {
+            flex: 1; background: linear-gradient(to bottom, #2c3e50 0%, #1a252f 100%);
+            border-radius: 12px; position: relative; overflow: hidden; display: flex; flex-direction: column;
+            border: 2px solid var(--panel-border); box-shadow: inset 0 0 50px rgba(0,0,0,0.5); min-height: 400px;
+        }
+        .shop-shelves {
+            position: absolute; top: 0; left: 0; width: 100%; height: 45%;
+            background-image: linear-gradient(90deg, transparent 95%, rgba(0,0,0,0.2) 100%), linear-gradient(#3e2723 15px, transparent 15px);
+            background-size: 150px 100px; opacity: 0.4;
+        }
+        .shop-counter {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 25%;
+            background: linear-gradient(to bottom, #5d4037 0%, #3e2723 100%);
+            border-top: 8px solid #4e342e; box-shadow: 0 -15px 30px rgba(0,0,0,0.6);
+            display: flex; justify-content: center; align-items: flex-start; padding-top: 15px;
+        }
+        .customer-area {
+            position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; padding-bottom: 15%; /* space for counter */
+        }
+        
+        .waiting-queue { position: absolute; left: 30px; bottom: 25%; z-index: 3; display: flex; }
+        .queue-person {
+            font-size: 3.5rem; margin-right: -15px; filter: drop-shadow(-2px 2px 4px rgba(0,0,0,0.6)); transition: all 0.3s ease-out;
+        }
+        
+        .tab-title { font-size: 1.5rem; margin-bottom: 5px; color: var(--accent-blue); border-bottom: 2px solid var(--panel-border); padding-bottom: 10px; }
+
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
+        @keyframes bounceIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
+
+    </style>
+</head>
+<body>
+
+    <!-- MAIN MENU -->
+    <div id="main-menu">
+        <div class="menu-bg-grid"></div>
+        <div class="floating-items">
+            <div class="f-item" style="top: 20%; left: 15%; animation-delay: 0s;">💎</div>
+            <div class="f-item" style="top: 70%; left: 10%; animation-delay: -2s;">💍</div>
+            <div class="f-item" style="top: 40%; left: 80%; animation-delay: -4s;">🚛</div>
+            <div class="f-item" style="top: 80%; left: 85%; animation-delay: -1s;">💰</div>
+            <div class="f-item" style="top: 15%; left: 60%; animation-delay: -3s;">🏎️</div>
+        </div>
+
+        <!-- INITIAL MENU -->
+        <div class="menu-content" id="menu-initial">
+            <div class="menu-title">PAWN EMPIRE</div>
+            <p class="menu-subtitle">Reach the Peak of Trade</p>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-play" onclick="game.showSetup()">
+                    <span class="btn-text">New Game</span>
+                    <span class="btn-icon">🗝️</span>
+                </button>
+                <button class="btn-warning" onclick="game.showSettings()" style="border-radius: 50px; padding: 15px 30px; font-size: 1.2rem;">
+                    ⚙️ Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- SETUP SCREEN -->
+        <div class="menu-content" id="menu-setup" style="display: none; min-width: 400px;">
+            <div class="menu-title" style="font-size: 3rem; margin-bottom: 5px;">SETUP COMPANY</div>
+            <p class="menu-subtitle" style="font-size: 1rem; margin-bottom: 30px;">Lay the foundations of your empire.</p>
+            
+            <label class="setup-label">Character Name (Boss)</label>
+            <input type="text" id="input-player-name" class="setup-input" placeholder="E.g.: Richard Harrison" maxlength="20">
+            
+            <label class="setup-label">Shop Name</label>
+            <input type="text" id="input-shop-name" class="setup-input" placeholder="E.g.: Gold & Silver Pawn" maxlength="25">
+            
+            <button class="btn-play" style="width: 100%; justify-content: center; margin-top: 20px;" onclick="game.submitSetup()">
+                <span class="btn-text">Open Shop</span>
+                <span class="btn-icon">🚀</span>
+            </button>
+            <button class="btn-danger" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="document.getElementById('menu-setup').style.display='none'; document.getElementById('menu-initial').style.display='flex'; sfx.click();">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal-content" style="text-align: left;">
+            <div class="modal-title" style="color: var(--accent-yellow); text-align: center;">⚙️ Game Settings</div>
+            
+            <label class="setup-label" style="margin-top: 20px;">Display Mode</label>
+            <select id="setting-display" class="settings-select">
+                <option value="windowed">Windowed</option>
+                <option value="fullscreen">Fullscreen</option>
+            </select>
+
+            <label class="setup-label">UI Scale (Resolution Size)</label>
+            <select id="setting-scale" class="settings-select">
+                <option value="80%">Small (80%)</option>
+                <option value="100%" selected>Normal (100%)</option>
+                <option value="120%">Large (120%)</option>
+                <option value="140%">Extra Large (140%)</option>
+            </select>
+
+            <label class="setup-label" style="display: flex; align-items: center; gap: 10px; margin-bottom: 25px; cursor: pointer; color: white;">
+                <input type="checkbox" id="setting-mute" style="width: 20px; height: 20px;">
+                Mute Sound Effects
+            </label>
+
+            <button class="btn-success" style="width: 100%; justify-content: center;" onclick="game.applySettings()">Apply & Close</button>
+        </div>
+    </div>
+
+    <!-- GAME UI -->
+    <div id="game-ui">
+        <!-- Header / Stats -->
+        <header>
+            <div class="stat-group">
+                <div class="stat-box" title="Cash on Hand">
+                    <span class="stat-icon">💵</span>
+                    <span id="cash-display">$1,000</span>
+                </div>
+                <div class="stat-box" title="Total Value (Cash + Items - Debt)">
+                    <span class="stat-icon">💎</span>
+                    <span id="value-display">$1,000</span>
+                </div>
+            </div>
+            <div class="stat-group">
+                <div class="stat-box" title="Date and Time">
+                    <span class="stat-icon">🕒</span>
+                    <span id="date-display" style="font-size: 0.95rem; color: var(--text-muted); margin-right: 10px;">28.02.2026</span>
+                    <span id="clock-display" style="color: #38bdf8; min-width: 80px; display: inline-block;">06:00 AM</span>
+                </div>
+                <div class="stat-box" title="Current Day">
+                    <span class="stat-icon">📅</span>
+                    <span>Day <span id="day-display">1</span></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="top-nav">
+            <button class="nav-btn active" onclick="game.switchTab('shop')" id="nav-shop">🏬 Shop</button>
+            <button class="nav-btn" onclick="game.switchTab('inventory')" id="nav-inventory">📦 Inventory (<span id="inv-count-nav">0</span>)</button>
+            <button class="nav-btn" onclick="game.switchTab('pricing')" id="nav-pricing">🏷️ Pricing</button>
+            <button class="nav-btn" onclick="game.switchTab('repair')" id="nav-repair">🔧 Repair Service</button>
+            <button class="nav-btn" onclick="game.switchTab('business')" id="nav-business">📊 Business</button>
+        </nav>
+
+        <main>
+            <!-- Left Area: Dynamic Tabs -->
+            <div class="left-col" style="padding: 0;">
+                
+                <!-- TAB 1: SHOP (DESK) -->
+                <div id="view-shop" class="view-panel active">
+                    <div class="shop-interior" id="desk-area">
+                        <div class="shop-shelves"></div>
+                        <div class="desk-title" style="color: white; text-shadow: 1px 1px 3px black; z-index: 5; font-size: 1rem;">Customer Desk (<span id="queue-display">0</span> left)</div>
+                        
+                        <!-- NEW: Waiting Queue Visual -->
+                        <div class="waiting-queue" id="waiting-queue"></div>
+
+                        <div class="customer-area">
+                            <div id="customer-view" style="display: none; text-align: center;">
+                                <div class="customer-avatar" id="c-avatar" style="font-size: 7rem; text-shadow: 0 10px 20px rgba(0,0,0,0.5);">👤</div>
+                                <div class="customer-name" id="c-name">John Doe</div>
+                                <div class="dialogue-box" id="c-dialogue" style="background-color: rgba(15, 23, 42, 0.9); box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative; z-index: 10; margin-top: -10px; font-size: 1.15rem;">
+                                    <!-- Dialogue text injected here -->
+                                </div>
+                                <div class="action-buttons" id="c-actions" style="position: relative; z-index: 10;">
+                                    <!-- Buttons injected here -->
+                                </div>
+                            </div>
+                            <div id="no-customer-view" style="text-align: center; position: relative; z-index: 10;">
+                                <div class="customer-avatar" style="font-size: 6rem; opacity: 0.5;">🚪</div>
+                                <p style="color: #e2e8f0; margin-bottom: 20px; text-shadow: 1px 1px 2px black; font-size: 1.2rem;">Shop is empty. Waiting for customers...</p>
+                                <button class="btn-primary" onclick="game.nextCustomer()" style="margin: 0 auto; font-size: 1.1rem; padding: 12px 24px;">Call Next Customer</button>
+                            </div>
+                        </div>
+                        <div class="shop-counter"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: INVENTORY -->
+                <div id="view-inventory" class="view-panel">
+                    <div class="tab-title">📦 Inventory Tracking</div>
+                    <p style="color: var(--text-muted); margin-bottom: 15px;">Details of all your items' condition and costs.</p>
+                    <div class="inventory-grid" id="inv-grid-stock"></div>
+                </div>
+
+                <!-- TAB 3: PRICING -->
+                <div id="view-pricing" class="view-panel">
+                    <div class="tab-title">🏷️ Price Management</div>
+                    <p style="color: var(--text-muted); margin-bottom: 15px;">Set display prices here. <span style="color: var(--accent-red); font-weight:bold;">Warning: Selling pawned (🔒) items will cost you reputation when the customer returns.</span></p>
+                    <div class="inventory-grid" id="inv-grid-pricing"></div>
+                </div>
+
+                <!-- TAB 4: REPAIR -->
+                <div id="view-repair" class="view-panel">
+                    <div class="tab-title">🔧 Repair Service</div>
+                    <p style="color: var(--text-muted); margin-bottom: 15px;">Restore damaged items to 'Mint' condition for a fee to multiply their value.</p>
+                    <div class="inventory-grid" id="inv-grid-repair"></div>
+                </div>
+
+                <!-- TAB 5: BUSINESS -->
+                <div id="view-business" class="view-panel">
+                    <div class="tab-title">📊 Business Summary & Finances</div>
+                    
+                    <div class="dashboard-grid">
+                        <div class="dash-card">
+                            <div class="dash-icon">🏬</div>
+                            <div class="dash-title">Shop Name</div>
+                            <div class="dash-val" id="dash-shop-name" style="font-size: 1.4rem;">Pawn Shop</div>
+                        </div>
+                        <div class="dash-card">
+                            <div class="dash-icon">👔</div>
+                            <div class="dash-title">Boss</div>
+                            <div class="dash-val" id="dash-player-name" style="font-size: 1.4rem;">Player</div>
+                        </div>
+                        <div class="dash-card">
+                            <div class="dash-icon">📅</div>
+                            <div class="dash-title">Days Open</div>
+                            <div class="dash-val" id="dash-days">1</div>
+                        </div>
+                        <div class="dash-card">
+                            <div class="dash-icon">📈</div>
+                            <div class="dash-title">Total Net Profit</div>
+                            <div class="dash-val val-green" id="dash-profit">$0</div>
+                        </div>
+                        <div class="dash-card" style="border-color: var(--accent-yellow);">
+                            <div class="dash-icon">⭐</div>
+                            <div class="dash-title">Reputation</div>
+                            <div class="dash-val val-yellow" id="dash-reputation">1%</div>
+                        </div>
+                    </div>
+
+                    <div class="tab-title" style="margin-top: 10px;">🏦 Bank Loans</div>
+                    <div class="employee-panel" style="border-color: var(--accent-blue);">
+                        <div class="employee-info">
+                            <h3 style="color: var(--accent-blue); margin-bottom: 10px; font-size: 1.3rem;">Loan Management</h3>
+                            <p style="color: var(--text-muted); line-height: 1.5;">
+                                You can take business loans based on your reputation. A 1% daily interest applies.<br><br>
+                                Max Loan Limit: <strong id="dash-max-loan" style="color:white; font-size:1.1rem;">$2,000</strong><br>
+                                <strong>Current Bank Debt:</strong> <span id="dash-debt" style="color: var(--accent-red); font-size: 1.2rem; font-weight: bold;">$0</span>
+                            </p>
+                            <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                                <input type="number" id="loan-input" class="setup-input" style="margin-bottom: 0; width: 200px;" placeholder="Amount ($)" min="1">
+                                <button class="btn-success" onclick="game.takeLoan()">💰 Take Loan</button>
+                                <button class="btn-warning" onclick="game.payLoan()">💸 Pay Debt</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-title" style="margin-top: 10px;">👥 Staff Management</div>
+                    <div class="employee-panel" id="emp-panel">
+                        <div class="employee-info">
+                            <h3 style="color: var(--accent-yellow); margin-bottom: 10px; font-size: 1.3rem;">Hire Expert Clerk</h3>
+                            <p style="color: var(--text-muted); line-height: 1.5;">
+                                Current Staff: <strong id="emp-count" style="color:white; font-size:1.2rem;">0</strong><br><br>
+                                <strong>Benefits:</strong> Each clerk increases daily customer capacity (+15), speeds up transactions, and auto-detects fake/stolen items.<br>
+                                <strong>Cost:</strong> <span style="color: var(--accent-red); font-weight: bold;">$2,500</span> Salary per clerk every 30 days.
+                            </p>
+                        </div>
+                        <div style="text-align: right;">
+                            <button class="btn-success" style="padding: 15px 30px; font-size: 1.1rem; width: 100%; justify-content: center;" onclick="game.hireEmployee()">
+                                👨‍💼 Hire ($2,500 / 30 Days)
+                            </button>
+                            <div id="dash-next-payday" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Next Payday: Day 30</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Right Area: Leaderboard & DB -->
+            <div class="right-col">
+                <div class="right-col-tabs">
+                    <button class="rtab-btn active" id="btn-rtab-leaderboard" onclick="game.setRightTab('leaderboard')">🏆 Leaderboard</button>
+                    <button class="rtab-btn" id="btn-rtab-database" onclick="game.setRightTab('database')">💻 Computer</button>
+                </div>
+                
+                <!-- LEADERBOARD VIEW -->
+                <div class="rview active" id="rview-leaderboard">
+                    <div class="leaderboard-title">Global Top 10 Shops</div>
+                    <div class="lb-list" id="leaderboard-list">
+                        <!-- Leaderboard bots injected here -->
+                    </div>
+                </div>
+
+                <!-- DATABASE VIEW -->
+                <div class="rview" id="rview-database">
+                    <div class="leaderboard-title" style="color: var(--accent-blue);">🔍 Pawn Records</div>
+                    <input type="text" id="db-search" class="db-search-box" placeholder="Search Customer Name... (E.g.: John)" oninput="game.renderDatabase()">
+                    <div class="db-table-container">
+                        <table class="db-table">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Item</th>
+                                    <th>Deadline (Day)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="db-table-body">
+                                <!-- DB entries injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- End of Day Modal -->
+    <div class="modal-overlay" id="eod-modal">
+        <div class="modal-content">
+            <div class="modal-title">🌙 Day Ended!</div>
+            <div class="modal-text">
+                <p>You closed the shop for today. Time to pay rent, electricity, and any loan interests.</p>
+                <span class="expense-text" id="expense-display">-$50 Expenses</span>
+                <p style="font-size: 0.9rem; margin-top: 10px;">Total Value: <strong id="eod-value-display" style="color:var(--accent-blue)">$1000</strong></p>
+            </div>
+            <button class="btn-primary" style="width: 100%; justify-content: center;" onclick="game.startNextDay()">Start Next Day ☀️</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="gameover-modal">
+        <div class="modal-content">
+            <div class="modal-title" style="color: var(--accent-red);">📉 Bankrupt!</div>
+            <div class="modal-text">
+                You ran out of cash and couldn't pay your bills. Your shop has been foreclosed.
+                <br><br>
+                Days Survived: <strong id="go-day" class="highlight"></strong><br>
+                Final Shop Value: <strong id="go-value" class="highlight"></strong>
+            </div>
+            <button class="btn-warning" style="width: 100%; justify-content: center;" onclick="location.reload()">Restart Game 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA & CONFIG ---
+        const FIRST_NAMES = ["James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph", "Thomas", "Charles", "Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen", "Christopher", "Daniel", "Matthew", "Anthony", "Mark", "Donald", "Steven", "Paul", "Andrew", "Joshua"];
+        const LAST_NAMES = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson"];
+
+        const ITEMS = [
+            { name: "Old TV", icon: "📺", base: 150 },
+            { name: "Gold Necklace", icon: "📿", base: 600, isPrecious: true },
+            { name: "Silver Ring", icon: "💍", base: 200, isPrecious: true },
+            { name: "Antique Clock", icon: "🕰️", base: 800 },
+            { name: "Diamond Earring", icon: "💎", base: 1200, isPrecious: true },
+            { name: "Renaissance Painting", icon: "🖼️", base: 2500 },
+            { name: "Comic Book", icon: "🦸‍♂️", base: 100 },
+            { name: "Old Typewriter", icon: "🖨️", base: 300 },
+            { name: "Record Player", icon: "📀", base: 400 },
+            { name: "Broken Console", icon: "🎮", base: 250 },
+            { name: "Samurai Sword", icon: "🗡️", base: 900 },
+            { name: "Signed Basketball", icon: "🏀", base: 150 },
+            { name: "Rare Stamp", icon: "✉️", base: 500 },
+            { name: "Old Radio", icon: "📻", base: 180 },
+            { name: "Smartphone", icon: "📱", base: 700 },
+            { name: "Mechanical Keyboard", icon: "⌨️", base: 120 },
+            { name: "Acoustic Guitar", icon: "🎸", base: 350 },
+            { name: "Electric Guitar", icon: "🎸", base: 600 },
+            { name: "Leather Jacket", icon: "🧥", base: 200 },
+            { name: "Antique Vase", icon: "🏺", base: 450 },
+            // Vehicles
+            { name: "Sedan Car", icon: "🚗", base: 18000, isPrecious: true, isVehicle: true },
+            { name: "Classic Sports Car", icon: "🏎️", base: 65000, isPrecious: true, isVehicle: true },
+            { name: "Passenger Bus", icon: "🚌", base: 95000, isPrecious: true, isVehicle: true },
+            { name: "Tow Truck", icon: "🚛", base: 140000, isPrecious: true, isVehicle: true }
+        ];
+
+        const CONDITIONS = [
+            { name: "Poor", mult: 0.6, color: "#94a3b8" },
+            { name: "Good", mult: 1.0, color: "#22c55e" },
+            { name: "Mint", mult: 1.5, color: "#eab308" }
+        ];
+
+        const AVATARS = ["👨", "👩", "🧔", "👱‍♀️", "👴", "👵", "👨‍🦰", "👩‍🦰", "🕵️‍♂️", "👷‍♀️"];
+
+        const BOT_NAMES = [
+            "PawnStars LLC", "Gold Digger", "Retro Haven", "Antique Ray", 
+            "Crypto Pawn", "Diamond Hands", "Cheap Market", "Scrap Dealer", "Elite Antiques", "Lucky Safe"
+        ];
+
+        // --- UTILS ---
+        const formatMoney = (amount) => `$${Math.floor(amount).toLocaleString('en-US')}`;
+        const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        
+        const formatDate = (d) => {
+            const day = d.getDate().toString().padStart(2, '0');
+            const month = (d.getMonth() + 1).toString().padStart(2, '0');
+            const year = d.getFullYear();
+            return `${month}/${day}/${year}`;
+        };
+
+        const formatTime = (mins) => {
+            let h = Math.floor(mins / 60);
+            const m = (mins % 60).toString().padStart(2, '0');
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12;
+            h = h ? h : 12; // 0 saati 12 olmalı
+            const hStr = h.toString().padStart(2, '0');
+            return `${hStr}:${m} ${ampm}`;
+        };
+
+        const generateCustomerName = () => {
+            return FIRST_NAMES[randomInt(0, FIRST_NAMES.length - 1)] + " " + LAST_NAMES[randomInt(0, LAST_NAMES.length - 1)];
+        };
+
+        // --- SOUND EFFECTS (Web Audio API) ---
+        let audioCtx;
+        let sfxEnabled = true;
+
+        const sfx = {
+            init: () => {
+                if (!sfxEnabled) return;
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            },
+            playTone: (freq, type, duration, vol=0.1) => {
+                if (!sfxEnabled || !audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            },
+            cash: () => { sfx.playTone(1200, 'sine', 0.1); setTimeout(()=>sfx.playTone(1600, 'sine', 0.15), 100); },
+            click: () => { sfx.playTone(600, 'sine', 0.05, 0.05); },
+            buzzer: () => { sfx.playTone(150, 'sawtooth', 0.3, 0.1); },
+            success: () => { sfx.playTone(400, 'square', 0.1, 0.05); setTimeout(()=>sfx.playTone(600, 'square', 0.1, 0.05), 100); setTimeout(()=>sfx.playTone(800, 'square', 0.2, 0.05), 200); },
+            negative: () => { sfx.playTone(300, 'sawtooth', 0.2, 0.1); setTimeout(()=>sfx.playTone(200, 'sawtooth', 0.4, 0.1), 200); }
+        };
+
+        function spawnParticle(text, type, x, y) {
+            const el = document.createElement('div');
+            el.className = `particle ${type}`;
+            el.innerText = text;
+            
+            if (!x || !y) {
+                const desk = document.getElementById('desk-area').getBoundingClientRect();
+                x = desk.left + desk.width / 2 + randomInt(-20, 20);
+                y = desk.top + desk.height / 2 + randomInt(-20, 20);
+            }
+
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1200);
+        }
+
+        // --- GAME STATE ---
+        const game = {
+            day: 1,
+            cash: 1000,
+            inventory: [],
+            leaderboard: [],
+            pawnTickets: [], 
+            
+            // Player info
+            playerName: "Player",
+            shopName: "My Pawn Shop",
+            employees: 0,
+            reputation: 10.0, 
+            bankDebt: 0, 
+
+            // Time & Date System
+            currentDate: new Date(2026, 1, 28),
+            currentTime: 360,
+            queueAvatars: [],
+            rightTab: 'leaderboard', 
+
+            // Daily limits
+            customersTotal: 10,
+            customersLeft: 10,
+            currentCustomer: null, 
+
+            startGame() {
+                sfx.init();
+                sfx.success();
+            },
+
+            showSetup() {
+                sfx.init();
+                sfx.click();
+                document.getElementById('menu-initial').style.display = 'none';
+                document.getElementById('menu-setup').style.display = 'flex';
+            },
+
+            showSettings() {
+                sfx.init();
+                sfx.click();
+                document.getElementById('settings-modal').classList.add('active');
+            },
+
+            applySettings() {
+                sfx.click();
+                
+                // Mute logic
+                const muteCheck = document.getElementById('setting-mute').checked;
+                sfxEnabled = !muteCheck;
+
+                // Scale logic
+                const scaleVal = document.getElementById('setting-scale').value;
+                document.documentElement.style.fontSize = scaleVal;
+
+                // Fullscreen logic
+                const displayMode = document.getElementById('setting-display').value;
+                if (displayMode === 'fullscreen') {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(err => {
+                            console.log("Error attempting to enable fullscreen:", err);
+                        });
+                    }
+                } else {
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    }
+                }
+
+                document.getElementById('settings-modal').classList.remove('active');
+            },
+
+            submitSetup() {
+                const pName = document.getElementById('input-player-name').value.trim();
+                const sName = document.getElementById('input-shop-name').value.trim();
+
+                if (!pName || !sName) {
+                    sfx.buzzer();
+                    alert("Please fill in all fields.");
+                    return;
+                }
+
+                sfx.success();
+                this.playerName = pName;
+                this.shopName = sName;
+                
+                document.getElementById('main-menu').style.display = 'none';
+                document.getElementById('game-ui').style.display = 'flex';
+                this.init();
+            },
+
+            switchTab(tabId) {
+                sfx.click();
+                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById('nav-' + tabId).classList.add('active');
+
+                document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+                document.getElementById('view-' + tabId).classList.add('active');
+            },
+
+            setRightTab(tabId) {
+                sfx.click();
+                this.rightTab = tabId;
+                document.querySelectorAll('.rtab-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById('btn-rtab-' + tabId).classList.add('active');
+
+                document.querySelectorAll('.rview').forEach(panel => panel.classList.remove('active'));
+                document.getElementById('rview-' + tabId).classList.add('active');
+                
+                if(tabId === 'database') this.renderDatabase();
+            },
+
+            init() {
+                let baseVal = 12000;
+                this.leaderboard = BOT_NAMES.map((name, i) => {
+                    baseVal -= randomInt(500, 1500);
+                    return { name: name, value: Math.max(100, baseVal), isPlayer: false };
+                });
+                this.leaderboard.push({ name: this.shopName, value: this.getTotalValue(), isPlayer: true });
+                
+                this.calculateDailyCustomers();
+                this.generateQueue();
+                this.updateUI();
+                this.renderLeaderboard();
+            },
+
+            increaseReputation(amount) {
+                this.reputation = Math.min(100, +(this.reputation + amount).toFixed(1));
+            },
+            
+            decreaseReputation(amount) {
+                this.reputation = Math.max(0, +(this.reputation - amount).toFixed(1));
+                const rect = document.getElementById('dash-reputation').getBoundingClientRect();
+                spawnParticle(`-${amount}% Rep`, 'negative', rect.left, rect.bottom);
+            },
+
+            calculateDailyCustomers() {
+                let maxCustomers = 20 + Math.floor(this.reputation * 4.5);
+                if (this.reputation >= 95) { maxCustomers = 500; }
+                this.customersTotal = randomInt(10, maxCustomers) + (this.employees * 15);
+                this.customersLeft = this.customersTotal;
+            },
+
+            advanceTime(mins) {
+                this.currentTime += mins;
+                if (this.currentTime >= 1320) { this.currentTime = 1320; }
+                this.updateUI();
+            },
+
+            generateQueue() {
+                this.queueAvatars = Array.from({length: this.customersLeft}, () => AVATARS[randomInt(0, AVATARS.length - 1)]);
+            },
+
+            getTotalValue() {
+                const invValue = this.inventory.reduce((sum, item) => sum + item.realValue, 0);
+                return this.cash + invValue - this.bankDebt; 
+            },
+
+            getMaxLoan() {
+                return Math.floor(2000 + Math.pow(this.reputation / 100, 2) * 198000);
+            },
+
+            getDailyExpense() {
+                let base = 40 + (this.day * 10);
+                let interest = Math.floor(this.bankDebt * 0.01);
+                return base + interest;
+            },
+
+            // --- DAY CYCLE ---
+            nextCustomer() {
+                sfx.click();
+                if (this.currentTime >= 1320 || this.customersLeft <= 0) {
+                    this.showEndOfDay();
+                    return;
+                }
+
+                const walkTime = Math.max(1, randomInt(2, 5) - Math.floor(this.employees * 0.5));
+                this.advanceTime(walkTime); 
+                this.customersLeft--;
+                
+                const avatar = this.queueAvatars.shift() || AVATARS[randomInt(0, AVATARS.length - 1)];
+                const customerName = generateCustomerName();
+                
+                const hasSalableItems = this.inventory.some(i => i.sellPrice > 0);
+                
+                let returningTicket = null;
+                const activePawns = this.pawnTickets.filter(t => t.status === 'Active' || t.status === 'Sold Early');
+                for(let t of activePawns) {
+                    if (this.day >= t.deadlineDay - 2 && this.day <= t.deadlineDay + 5) {
+                        if(Math.random() < 0.25) { 
+                            returningTicket = t;
+                            break;
+                        }
+                    }
+                }
+
+                if (returningTicket) {
+                    this.currentCustomer = {
+                        type: 'redeemer',
+                        avatar: avatar,
+                        name: returningTicket.customerName, 
+                        ticket: returningTicket
+                    };
+                } else {
+                    const rand = Math.random();
+                    if (hasSalableItems && rand > 0.6) {
+                        const salableItems = this.inventory.filter(i => i.sellPrice > 0);
+                        const item = salableItems[randomInt(0, salableItems.length - 1)];
+                        const maxWilling = Math.floor(item.realValue * (0.8 + Math.random() * 0.5));
+                        
+                        this.currentCustomer = { type: 'buyer', avatar: avatar, name: customerName, item: item, maxWilling: maxWilling };
+                    } else if (rand > 0.3) {
+                        this.generateSellerOrPawner('seller', avatar, customerName);
+                    } else {
+                        this.generateSellerOrPawner('pawner', avatar, customerName);
+                    }
+                }
+
+                this.renderDesk();
+            },
+
+            generateSellerOrPawner(type, avatar, customerName) {
+                const baseItem = ITEMS[randomInt(0, ITEMS.length - 1)];
+                const condition = CONDITIONS[randomInt(0, CONDITIONS.length - 1)];
+                
+                const year = randomInt(1920, 2023);
+                const wear = condition.name === "Poor" ? randomInt(60, 95) : (condition.name === "Good" ? randomInt(20, 59) : randomInt(0, 19));
+                const baseValue = baseItem.base + (this.day * 5);
+                const realValue = Math.floor(baseValue * condition.mult);
+                
+                const isFake = baseItem.isPrecious ? (Math.random() < 0.35) : false;
+                
+                const item = {
+                    id: Date.now() + Math.random(),
+                    name: baseItem.name,
+                    icon: baseItem.icon,
+                    condition: condition,
+                    year: year,
+                    wear: wear,
+                    realValue: realValue,
+                    cost: 0,
+                    sellPrice: 0,
+                    isPrecious: baseItem.isPrecious || false,
+                    isVehicle: baseItem.isVehicle || false,
+                    isFake: isFake,
+                    scanned: false,
+                    isPawned: false
+                };
+
+                // Employees auto-inspect
+                if (this.employees > 0 && item.isPrecious) {
+                    item.scanned = true;
+                    if (item.isFake) {
+                        item.realValue = Math.floor(item.realValue * 0.05);
+                        item.name = (item.isVehicle ? "Stolen/Wrecked " : "Fake ") + item.name;
+                    }
+                }
+
+                if (type === 'seller') {
+                    const askingPrice = Math.floor(item.realValue * (0.5 + Math.random() * 0.7));
+                    const minAcceptable = Math.floor(askingPrice * (0.65 + Math.random() * 0.25));
+                    this.currentCustomer = { type: 'seller', avatar: avatar, name: customerName, item: item, askingPrice: Math.max(1, askingPrice), minAcceptable: Math.max(1, minAcceptable), patience: 2, haggleMode: false };
+                } else if (type === 'pawner') {
+                    const loanRequest = Math.max(10, Math.floor(item.realValue * (0.2 + Math.random() * 0.3)));
+                    const pawnDuration = randomInt(10, 30);
+                    const repayAmount = Math.floor(loanRequest * (1.2 + Math.random() * 0.2));
+                    this.currentCustomer = { type: 'pawner', avatar: avatar, name: customerName, item: item, loanRequest: loanRequest, repayAmount: repayAmount, duration: pawnDuration };
+                }
+            },
+
+            showEndOfDay() {
+                sfx.buzzer();
+                document.getElementById('customer-view').style.display = 'none';
+                document.getElementById('no-customer-view').style.display = 'none';
+                
+                let expense = this.getDailyExpense();
+                let interest = Math.floor(this.bankDebt * 0.01);
+                let baseKira = 40 + (this.day * 10);
+                
+                let expenseText = `-${formatMoney(baseKira)} Rent/Bills`;
+
+                if (interest > 0) {
+                    expenseText += `<br><span style="color: var(--accent-red); font-size: 1rem;">-${formatMoney(interest)} Bank Loan Interest (1%)</span>`;
+                }
+
+                if (this.employees > 0 && this.day % 30 === 0) {
+                    const totalSalaries = this.employees * 2500;
+                    expense += totalSalaries;
+                    expenseText += `<br><span style="color: var(--accent-red); font-size: 1rem;">-${formatMoney(totalSalaries)} Staff Salary (${this.employees} Person(s))</span>`;
+                }
+
+                document.getElementById('expense-display').innerHTML = expenseText;
+                document.getElementById('eod-value-display').innerText = formatMoney(this.getTotalValue());
+                
+                document.getElementById('eod-modal').classList.add('active');
+            },
+
+            startNextDay() {
+                sfx.cash();
+                let expense = this.getDailyExpense();
+                if (this.employees > 0 && this.day % 30 === 0) { expense += (this.employees * 2500); }
+                this.cash -= expense;
+                
+                const cashRect = document.getElementById('cash-display').getBoundingClientRect();
+                spawnParticle(`-${formatMoney(expense)}`, 'negative', cashRect.left, cashRect.bottom + 20);
+
+                if (this.cash < 0) { this.gameOver(); return; }
+
+                document.getElementById('eod-modal').classList.remove('active');
+                
+                this.day++;
+                this.currentDate.setDate(this.currentDate.getDate() + 1);
+                this.currentTime = 360;
+                
+                this.calculateDailyCustomers();
+                this.currentCustomer = null;
+                this.generateQueue();
+                
+                // Check Expired Pawns
+                this.pawnTickets.forEach(t => {
+                    if (t.status === 'Active' && this.day > t.deadlineDay + 5) {
+                        t.status = 'Confiscated'; // Deadline passed entirely
+                        const invItem = this.inventory.find(i => i.id === t.itemId);
+                        if(invItem) invItem.isPawned = false;
+                    }
+                });
+
+                this.leaderboard.forEach(b => {
+                    if (!b.isPlayer) b.value = Math.floor(b.value * (1 + (randomInt(1, 6) / 100)));
+                });
+
+                this.updateUI();
+                this.renderDesk();
+                this.renderLeaderboard();
+            },
+
+            gameOver() {
+                sfx.buzzer();
+                document.getElementById('eod-modal').classList.remove('active');
+                document.getElementById('go-day').innerText = this.day;
+                document.getElementById('go-value').innerText = formatMoney(this.getTotalValue());
+                document.getElementById('gameover-modal').classList.add('active');
+            },
+
+            // --- BANK INTERACTIONS ---
+            takeLoan() {
+                const amount = parseInt(document.getElementById('loan-input').value);
+                if (isNaN(amount) || amount <= 0) { sfx.buzzer(); alert("Enter a valid amount!"); return; }
+                
+                const maxAllowed = this.getMaxLoan();
+                if (this.bankDebt + amount > maxAllowed) {
+                    sfx.buzzer();
+                    alert(`Based on your reputation, your maximum loan limit is ${formatMoney(maxAllowed)}. You cannot take ${formatMoney(amount)}!`);
+                    return;
+                }
+                
+                sfx.cash();
+                this.cash += amount;
+                this.bankDebt += amount;
+                document.getElementById('loan-input').value = '';
+                this.updateUI();
+                
+                const rect = document.getElementById('dash-debt').getBoundingClientRect();
+                spawnParticle(`+${formatMoney(amount)} Cash`, 'positive', rect.left, rect.bottom + 20);
+            },
+
+            payLoan() {
+                let amount = parseInt(document.getElementById('loan-input').value);
+                if (isNaN(amount) || amount <= 0) { sfx.buzzer(); alert("Enter a valid amount!"); return; }
+                
+                if (amount > this.bankDebt) amount = this.bankDebt;
+                
+                if (this.cash >= amount) {
+                    sfx.cash();
+                    this.cash -= amount;
+                    this.bankDebt -= amount;
+                    document.getElementById('loan-input').value = '';
+                    this.updateUI();
+                    
+                    const rect = document.getElementById('dash-debt').getBoundingClientRect();
+                    spawnParticle(`-${formatMoney(amount)} Paid`, 'negative', rect.left, rect.bottom + 20);
+                } else {
+                    sfx.buzzer();
+                    alert("You don't have enough cash to make this payment!");
+                }
+            },
+
+            // --- INTERACTIONS ---
+            acceptSeller() {
+                const c = this.currentCustomer;
+                if (this.cash >= c.askingPrice) {
+                    sfx.cash();
+                    this.advanceTime(Math.max(1, randomInt(5, 10) - this.employees)); 
+                    this.cash -= c.askingPrice;
+                    c.item.cost = c.askingPrice;
+                    c.item.sellPrice = Math.floor(c.askingPrice * 1.5); 
+                    this.inventory.push(c.item);
+                    
+                    const rect = document.getElementById('cash-display').getBoundingClientRect();
+                    spawnParticle(`-${formatMoney(c.askingPrice)}`, 'negative', rect.left, rect.bottom + 20);
+                    
+                    this.increaseReputation(0.5);
+                    this.dismissCustomer();
+                } else { alert("Not enough cash!"); }
+            },
+
+            acceptPawner() {
+                const c = this.currentCustomer;
+                if (this.cash >= c.loanRequest) {
+                    sfx.cash();
+                    this.advanceTime(Math.max(1, randomInt(5, 10) - this.employees)); 
+                    this.cash -= c.loanRequest;
+                    
+                    c.item.cost = c.loanRequest;
+                    c.item.sellPrice = 0; 
+                    c.item.isPawned = true; 
+                    this.inventory.push(c.item);
+                    
+                    this.pawnTickets.push({
+                        id: Date.now(),
+                        customerName: c.name,
+                        itemId: c.item.id,
+                        itemName: c.item.name,
+                        loanAmount: c.loanRequest,
+                        repayAmount: c.repayAmount,
+                        pawnDay: this.day,
+                        deadlineDay: this.day + c.duration,
+                        status: 'Active'
+                    });
+
+                    const rect = document.getElementById('cash-display').getBoundingClientRect();
+                    spawnParticle(`-${formatMoney(c.loanRequest)}`, 'negative', rect.left, rect.bottom + 20);
+                    spawnParticle(`Pawn Record Created`, 'positive', rect.left, rect.bottom + 40);
+                    
+                    this.increaseReputation(0.5);
+                    this.dismissCustomer();
+                    if(this.rightTab === 'database') this.renderDatabase();
+                } else { alert("Not enough cash to give this loan!"); }
+            },
+
+            processRedeem(action) {
+                const c = this.currentCustomer;
+                const t = c.ticket;
+                this.advanceTime(Math.max(1, randomInt(5, 10) - this.employees));
+                
+                const deskBox = document.getElementById('c-dialogue');
+                const actionsEl = document.getElementById('c-actions');
+
+                if (action === 'give_back') {
+                    const itemIndex = this.inventory.findIndex(i => i.id === t.itemId);
+                    if (itemIndex > -1) {
+                        sfx.cash();
+                        this.cash += t.repayAmount;
+                        this.inventory.splice(itemIndex, 1);
+                        t.status = 'Redeemed';
+                        
+                        const rect = document.getElementById('cash-display').getBoundingClientRect();
+                        spawnParticle(`+${formatMoney(t.repayAmount)}`, 'positive', rect.left, rect.bottom + 20);
+                        this.increaseReputation(2.0); 
+
+                        deskBox.innerHTML = `"Great! Thanks for keeping my item safe. Here is your ${formatMoney(t.repayAmount)}."`;
+                    } else {
+                        sfx.negative();
+                        deskBox.innerHTML = `"What do you mean you can't find it?! It was precious to me! You scammers!" <br><br><em>The customer left the shop in anger.</em>`;
+                        this.decreaseReputation(15.0); 
+                        t.status = 'Sold Early';
+                    }
+                } else if (action === 'sold_already') {
+                    sfx.negative();
+                    deskBox.innerHTML = `"What?! You sold it?! We had a deal! I'll report you everywhere!" <br><br><em>The customer left the shop shouting.</em>`;
+                    this.decreaseReputation(15.0);
+                } else if (action === 'too_late') {
+                    sfx.negative();
+                    deskBox.innerHTML = `"I was only a few days late! Please, can't you give it back? ... Damn, I know your rules." <br><br><em>The customer left sadly.</em>`;
+                    this.decreaseReputation(2.0); 
+                }
+
+                actionsEl.innerHTML = `<button class="btn-primary" onclick="game.dismissCustomer()">Continue</button>`;
+            },
+
+            rejectCustomer() {
+                sfx.click();
+                this.advanceTime(Math.max(1, randomInt(1, 3) - Math.floor(this.employees * 0.5)));
+                this.dismissCustomer();
+            },
+
+            testItem() {
+                const c = this.currentCustomer;
+                if (!c || (c.type !== 'seller' && c.type !== 'pawner') || !c.item.isPrecious || c.item.scanned) return;
+
+                this.advanceTime(15);
+                c.item.scanned = true;
+                const deskBox = document.getElementById('c-dialogue');
+
+                if (c.item.isFake) {
+                    sfx.buzzer();
+                    c.item.realValue = Math.floor(c.item.realValue * 0.05);
+                    c.item.name = (c.item.isVehicle ? "Stolen/Wrecked " : "Fake ") + c.item.name;
+                    if(c.type === 'seller') c.minAcceptable = Math.floor(c.item.realValue * 0.8);
+
+                    const fakeMsg = c.item.isVehicle ? "Vehicle is stolen/totaled and the engine is dead!" : "Item is FAKE!";
+                    deskBox.insertAdjacentHTML('beforeend', `<br><br><span style="color: var(--accent-red); font-weight: bold;">[SYSTEM / INSPECTION]: ${fakeMsg}</span><br><br> <em>The customer started sweating...</em> "Well, uh, I thought it was real..."`);
+                    this.increaseReputation(1.0);
+                } else {
+                    sfx.success();
+                    const successMsg = c.item.isVehicle ? "Vehicle is clean! Passed inspection." : "Item is AUTHENTIC! Passed expert test.";
+                    deskBox.insertAdjacentHTML('beforeend', `<br><br><span style="color: var(--accent-green); font-weight: bold;">[SYSTEM / INSPECTION]: ${successMsg}</span>`);
+                }
+
+                this.renderDesk(true);
+            },
+
+            haggleSeller() {
+                sfx.click();
+                const c = this.currentCustomer;
+                c.haggleMode = true; 
+                this.renderDesk(true);
+            },
+
+            submitHaggle() {
+                const c = this.currentCustomer;
+                const inputEl = document.getElementById('haggle-input');
+                const offer = parseInt(inputEl.value);
+
+                if (isNaN(offer) || offer <= 0) {
+                    sfx.buzzer();
+                    alert("Enter a valid amount!");
+                    return;
+                }
+
+                sfx.click();
+                this.advanceTime(Math.max(1, 10 - this.employees));
+                const deskBox = document.getElementById('c-dialogue');
+                c.haggleMode = false;
+
+                if (offer >= c.askingPrice) {
+                    deskBox.innerHTML = `"Great! I wanted ${formatMoney(c.askingPrice)} anyway, deal."`;
+                    c.askingPrice = offer;
+                } else if (offer >= c.minAcceptable) {
+                    c.askingPrice = offer;
+                    deskBox.innerHTML = `"Hmm... Come to think of it, ${formatMoney(offer)} is not a bad price. Deal."`;
+                } else {
+                    c.patience--;
+                    if (c.patience > 0) {
+                        const drop = c.askingPrice - Math.floor((c.askingPrice - Math.max(offer, c.minAcceptable)) * 0.4);
+                        c.askingPrice = drop;
+                        deskBox.innerHTML = `"That's too low! My final price is <span class="price-tag">${formatMoney(c.askingPrice)}</span>. Take it or leave it."`;
+                    } else {
+                        deskBox.innerHTML = `"Are you kidding me? I'm going to another shop!" <br><br> <em>(The customer left angrily)</em>`;
+                        const actions = document.getElementById('c-actions');
+                        actions.innerHTML = `<button class="btn-warning" onclick="game.dismissCustomer()">Continue</button>`;
+                        return;
+                    }
+                }
+                this.renderDesk(true); 
+            },
+
+            processBuyerOffer(acceptCounterOffer = false) {
+                sfx.cash();
+                this.advanceTime(Math.max(1, randomInt(5, 10) - this.employees));
+                const c = this.currentCustomer;
+                let finalPrice = c.item.sellPrice;
+                if (acceptCounterOffer) { finalPrice = c.maxWilling; }
+
+                const pawnTicket = this.pawnTickets.find(t => t.itemId === c.item.id && t.status === 'Active');
+                if (pawnTicket) { pawnTicket.status = 'Sold Early'; }
+
+                this.inventory = this.inventory.filter(i => i.id !== c.item.id);
+                this.cash += finalPrice;
+                const rect = document.getElementById('cash-display').getBoundingClientRect();
+                spawnParticle(`+${formatMoney(finalPrice)}`, 'positive', rect.left, rect.bottom + 20);
+
+                this.increaseReputation(0.5);
+                this.dismissCustomer();
+            },
+
+            dismissCustomer() {
+                this.currentCustomer = null;
+                if(this.rightTab === 'database') this.renderDatabase();
+                this.updateUI();
+                this.renderDesk();
+            },
+
+            updateItemPrice(id, newPrice) {
+                sfx.click();
+                const item = this.inventory.find(i => i.id === id);
+                if (item) {
+                    item.sellPrice = Math.max(0, parseInt(newPrice) || 0);
+                    this.updateUI();
+                }
+            },
+
+            repairItem(id) {
+                const item = this.inventory.find(i => i.id === id);
+                if (!item) return;
+
+                const perfectMult = CONDITIONS.find(c => c.name === "Mint").mult;
+                const baseValue = item.realValue / item.condition.mult;
+                const perfectValue = baseValue * perfectMult;
+                const repairCost = Math.floor((perfectValue - item.realValue) * 0.4);
+
+                if (repairCost <= 0 || item.condition.name === "Mint") { sfx.buzzer(); alert("This item is already in mint condition!"); return; }
+
+                if (this.cash >= repairCost) {
+                    sfx.success();
+                    this.cash -= repairCost;
+                    item.condition = CONDITIONS.find(c => c.name === "Mint");
+                    item.wear = 0;
+                    item.realValue = Math.floor(perfectValue);
+                    item.cost += repairCost;
+                    
+                    const rect = document.getElementById('nav-repair').getBoundingClientRect();
+                    spawnParticle(`-${formatMoney(repairCost)}`, 'negative', rect.left + 50, rect.bottom + 20);
+                    spawnParticle(`Repaired!`, 'positive', rect.left + 50, rect.bottom + 40);
+
+                    this.updateUI();
+                } else { alert(`You need ${formatMoney(repairCost)} for repair. Not enough cash!`); }
+            },
+
+            hireEmployee() {
+                sfx.success();
+                this.employees++;
+                this.customersLeft += 15;
+                this.customersTotal += 15;
+                this.generateQueue();
+                this.updateUI();
+                alert(`Congratulations! Expert Clerk #${this.employees} hired!\n\nFake/stolen items will now be auto-detected, transactions are faster, and daily visitor capacity has increased.`);
+            },
+
+            // --- RENDERING ---
+            updateUI() {
+                document.getElementById('cash-display').innerText = formatMoney(this.cash);
+                document.getElementById('value-display').innerText = formatMoney(this.getTotalValue());
+                document.getElementById('day-display').innerText = this.day;
+                document.getElementById('queue-display').innerText = this.customersLeft;
+                document.getElementById('inv-count-nav').innerText = this.inventory.length;
+                
+                document.getElementById('date-display').innerText = formatDate(this.currentDate);
+                const clockEl = document.getElementById('clock-display');
+                clockEl.innerText = formatTime(this.currentTime);
+                clockEl.style.color = this.currentTime >= 1230 ? 'var(--accent-red)' : '#38bdf8';
+
+                this.renderQueue();
+                this.renderInventoryTabs();
+                this.renderBusinessTab();
+                
+                const playerEntry = this.leaderboard.find(b => b.isPlayer);
+                if(playerEntry) {
+                    playerEntry.value = this.getTotalValue();
+                    playerEntry.name = this.shopName;
+                }
+            },
+            
+            renderBusinessTab() {
+                document.getElementById('dash-shop-name').innerText = this.shopName;
+                document.getElementById('dash-player-name').innerText = this.playerName;
+                document.getElementById('dash-days').innerText = this.day;
+                document.getElementById('dash-reputation').innerText = `${this.reputation}%`;
+                document.getElementById('emp-count').innerText = this.employees;
+                
+                // Bank Update
+                document.getElementById('dash-max-loan').innerText = formatMoney(this.getMaxLoan());
+                document.getElementById('dash-debt').innerText = formatMoney(this.bankDebt);
+
+                const netProfit = this.getTotalValue() - 1000;
+                const profitEl = document.getElementById('dash-profit');
+                profitEl.innerText = formatMoney(netProfit);
+                
+                if (netProfit < 0) { profitEl.className = 'dash-val val-red'; profitEl.style.color = 'var(--accent-red)'; } 
+                else { profitEl.className = 'dash-val val-green'; profitEl.style.color = 'var(--accent-green)'; }
+
+                const nextPayDay = Math.ceil(this.day / 30) * 30;
+                document.getElementById('dash-next-payday').innerText = `Next Payday: Day ${nextPayDay === this.day ? nextPayDay + 30 : nextPayDay}`;
+            },
+
+            renderQueue() {
+                const queueEl = document.getElementById('waiting-queue');
+                if(!queueEl) return;
+                queueEl.innerHTML = '';
+                
+                const displayLimit = Math.min(this.queueAvatars.length, 6);
+                for(let i = 0; i < displayLimit; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'queue-person';
+                    el.innerText = this.queueAvatars[i];
+                    queueEl.appendChild(el);
+                }
+                
+                if(this.queueAvatars.length > 6) {
+                    const more = document.createElement('div');
+                    more.style.display = 'flex'; more.style.alignItems = 'center';
+                    more.style.fontSize = '1.2rem'; more.style.fontWeight = 'bold'; more.style.marginLeft = '10px';
+                    more.innerText = `+${this.queueAvatars.length - 6}`;
+                    queueEl.appendChild(more);
+                }
+            },
+
+            renderDesk(preserveDialogue = false) {
+                const cView = document.getElementById('customer-view');
+                const emptyView = document.getElementById('no-customer-view');
+                const avatarEl = document.getElementById('c-avatar');
+                const nameEl = document.getElementById('c-name');
+                const dialogueEl = document.getElementById('c-dialogue');
+                const actionsEl = document.getElementById('c-actions');
+
+                if (!this.currentCustomer) {
+                    cView.style.display = 'none'; emptyView.style.display = 'block';
+                    if (this.currentTime >= 1320) {
+                        emptyView.innerHTML = `<div class="customer-avatar">🌙</div><p style="color: var(--text-muted); margin-bottom: 15px;">It's 10:00 PM. Shift is over!</p><button class="btn-primary" onclick="game.showEndOfDay()">End Day</button>`;
+                    } else if (this.customersLeft === 0) {
+                        emptyView.innerHTML = `<div class="customer-avatar">🌙</div><p style="color: var(--text-muted); margin-bottom: 15px;">No more customers for today.</p><button class="btn-primary" onclick="game.showEndOfDay()">End Day</button>`;
+                    } else {
+                        emptyView.innerHTML = `<div class="customer-avatar">🚪</div><p style="color: #e2e8f0; margin-bottom: 20px; text-shadow: 1px 1px 2px black; font-size: 1.2rem;">Shop is empty. ${this.customersLeft} people waiting in line...</p><button class="btn-primary" onclick="game.nextCustomer()" style="margin: 0 auto; font-size: 1.1rem; padding: 12px 24px;">Call Next Customer</button>`;
+                    }
+                    return;
+                }
+
+                cView.style.display = 'block'; emptyView.style.display = 'none';
+                const c = this.currentCustomer;
+                avatarEl.innerText = c.avatar;
+                nameEl.innerText = c.name;
+
+                const buildCard = (item) => {
+                    const statusText = item.isVehicle ? 
+                        (item.scanned ? (item.isFake ? '<span style="color:var(--accent-red); font-weight:bold;">STOLEN/WRECKED ❌</span>' : '<span style="color:var(--accent-green); font-weight:bold;">CLEAN ✅</span>') : '<span style="color:var(--accent-yellow); font-weight:bold;">Inspection Req. ❓</span>')
+                        :
+                        (item.isPrecious ? 
+                        (item.scanned ? (item.isFake ? '<span style="color:var(--accent-red); font-weight:bold;">FAKE ❌</span>' : '<span style="color:var(--accent-green); font-weight:bold;">AUTHENTIC ✅</span>') : '<span style="color:var(--accent-yellow); font-weight:bold;">Not Tested ❓</span>') 
+                        : '<span style="color:var(--text-muted)">Not required</span>');
+
+                    const statusLabel = item.isVehicle ? "Inspection:" : "Authenticity:";
+
+                    return `
+                        <div class="item-inspection">
+                            <div class="item-inspection-icon">${item.icon || '📦'}</div>
+                            <div class="item-inspection-details">
+                                <strong style="font-size: 1.1rem; color: var(--accent-yellow);">${item.name}</strong>
+                                <span style="color:var(--text-muted)">Year: <span style="color:#fff">${item.year}</span> | Wear: <span style="color:#fff">${item.wear}%</span></span>
+                                <span style="color:var(--text-muted)">Condition: <span style="color:${item.condition.color}">${item.condition.name}</span></span>
+                                <span style="color:var(--text-muted)">${statusLabel} ${statusText}</span>
+                            </div>
+                        </div>`;
+                };
+
+                let itemDetailsHTML = c.item ? buildCard(c.item) : '';
+
+                if (c.type === 'seller') {
+                    if (!preserveDialogue) dialogueEl.innerHTML = `Hello, I have this item: <div id="dynamic-card-wrapper">${itemDetailsHTML}</div> I want <span class="price-tag">${formatMoney(c.askingPrice)}</span> for it.`;
+                    else { const wrapper = document.getElementById('dynamic-card-wrapper'); if (wrapper) wrapper.innerHTML = itemDetailsHTML; }
+
+                    if (c.haggleMode) {
+                        actionsEl.innerHTML = `<div class="haggle-box"><input type="number" id="haggle-input" class="haggle-input" placeholder="Your Offer ($)" min="1"><button class="btn-warning" onclick="game.submitHaggle()">Make Offer</button><button class="btn-danger" onclick="game.renderDesk(true); game.currentCustomer.haggleMode=false;">Cancel</button></div>`;
+                        setTimeout(() => document.getElementById('haggle-input').focus(), 50);
+                    } else {
+                        let testLabel = c.item.isVehicle ? '🔧 Inspect Vehicle' : '🔍 Test Item';
+                        let testBtnHtml = (c.item.isPrecious && !c.item.scanned) ? `<button class="btn-primary" onclick="game.testItem()">${testLabel}</button>` : '';
+                        actionsEl.innerHTML = `${testBtnHtml}<button class="btn-success" onclick="game.acceptSeller()">Accept (${formatMoney(c.askingPrice)})</button><button class="btn-danger" onclick="game.rejectCustomer()">Reject</button><button class="btn-warning" onclick="game.haggleSeller()" ${c.patience <= 0 ? 'disabled' : ''}>Haggle (${c.patience} Left)</button>`;
+                    }
+                } 
+                else if (c.type === 'pawner') {
+                    if (!preserveDialogue) dialogueEl.innerHTML = `Hi, I'm short on cash. I want to pawn this: <div id="dynamic-card-wrapper">${itemDetailsHTML}</div> I need a loan of <span class="price-tag">${formatMoney(c.loanRequest)}</span>. I'll pay back <span class="price-tag">${formatMoney(c.repayAmount)}</span> in <strong>${c.duration} days</strong>.`;
+                    else { const wrapper = document.getElementById('dynamic-card-wrapper'); if (wrapper) wrapper.innerHTML = itemDetailsHTML; }
+                    
+                    let testLabel = c.item.isVehicle ? '🔧 Inspect Vehicle' : '🔍 Test Item';
+                    let testBtnHtml = (c.item.isPrecious && !c.item.scanned) ? `<button class="btn-primary" onclick="game.testItem()">${testLabel}</button>` : '';
+                    actionsEl.innerHTML = `${testBtnHtml}<button class="btn-success" onclick="game.acceptPawner()">Accept (Pawn)</button><button class="btn-danger" onclick="game.rejectCustomer()">Reject</button>`;
+                }
+                else if (c.type === 'buyer') {
+                    if (!preserveDialogue) {
+                        if (c.item.sellPrice <= c.maxWilling) {
+                            dialogueEl.innerHTML = `Hi, this item caught my eye: <div id="dynamic-card-wrapper">${itemDetailsHTML}</div> The price <span class="price-tag">${formatMoney(c.item.sellPrice)}</span> is great. I'll take it!`;
+                            actionsEl.innerHTML = `<button class="btn-success" onclick="game.processBuyerOffer()">Sell (${formatMoney(c.item.sellPrice)})</button>`;
+                        } else {
+                            dialogueEl.innerHTML = `I like this item: <div id="dynamic-card-wrapper">${itemDetailsHTML}</div> But <span class="price-tag">${formatMoney(c.item.sellPrice)}</span> is too expensive. I can offer at most <span class="price-tag">${formatMoney(c.maxWilling)}</span>.`;
+                            actionsEl.innerHTML = `<button class="btn-success" onclick="game.processBuyerOffer(true)">Accept (${formatMoney(c.maxWilling)})</button><button class="btn-danger" onclick="game.rejectCustomer()">Reject (Send away)</button>`;
+                        }
+                    }
+                }
+                else if (c.type === 'redeemer') {
+                    const t = c.ticket;
+                    if (!preserveDialogue) {
+                        dialogueEl.innerHTML = `Hi, I'm ${c.name}. I came to redeem my <strong>${t.itemName}</strong> pawned on <strong>Day ${t.pawnDay}</strong>. Here is the <span class="price-tag">${formatMoney(t.repayAmount)}</span> as agreed. Please check the computer and return my item.`;
+                    }
+                    
+                    const itemExists = this.inventory.some(i => i.id === t.itemId);
+                    let actionHtml = '';
+
+                    if (this.day > t.deadlineDay) {
+                        actionHtml += `<button class="btn-danger" onclick="game.processRedeem('too_late')">Time's up, item is mine</button>`;
+                        if (itemExists) actionHtml += `<button class="btn-warning" onclick="game.processRedeem('give_back')">Give back anyway (+Rep)</button>`;
+                    } else {
+                        if (itemExists) {
+                            actionHtml += `<button class="btn-success" onclick="game.processRedeem('give_back')">Give item, take cash (${formatMoney(t.repayAmount)})</button>`;
+                        } else {
+                            actionHtml += `<button class="btn-danger" onclick="game.processRedeem('sold_already')">Sorry, I sold it early...</button>`;
+                        }
+                    }
+
+                    actionsEl.innerHTML = actionHtml;
+                }
+            },
+
+            renderInventoryTabs() {
+                const gridStock = document.getElementById('inv-grid-stock');
+                const gridPricing = document.getElementById('inv-grid-pricing');
+                const gridRepair = document.getElementById('inv-grid-repair');
+                
+                gridStock.innerHTML = ''; gridPricing.innerHTML = ''; gridRepair.innerHTML = '';
+
+                if (this.inventory.length === 0) {
+                    const emptyMsg = '<p style="color:var(--text-muted); grid-column: 1/-1;">Inventory is empty. Buy items from customers.</p>';
+                    gridStock.innerHTML = emptyMsg; gridPricing.innerHTML = emptyMsg; gridRepair.innerHTML = emptyMsg; return;
+                }
+
+                this.inventory.forEach(item => {
+                    const pawnVisual = item.isPawned ? `<div class="item-pawn-tag">🔒 Pawned</div>` : '';
+                    const cardHeader = `
+                        ${pawnVisual}
+                        <div class="item-name"><span style="font-size: 1.4rem; margin-right: 5px;">${item.icon || '📦'}</span> ${item.name}</div>
+                        <div class="item-cond">Condition: <span style="color:${item.condition.color}">${item.condition.name}</span><br><span style="font-size: 0.8rem; color: var(--text-muted);">Year: ${item.year || '?'} | Wear: ${item.wear || 0}%</span></div>
+                        <div class="item-cost">Cost: <span>${formatMoney(item.cost)}</span></div><div style="flex:1"></div>
+                    `;
+
+                    // 1. STOCK
+                    const cardStock = document.createElement('div'); cardStock.className = 'item-card';
+                    cardStock.innerHTML = cardHeader + `<div style="font-size: 0.85rem; color: var(--accent-blue); margin-top: 10px; font-weight: bold;">Est. Real Value: ${formatMoney(item.realValue)}</div>`;
+                    gridStock.appendChild(cardStock);
+
+                    // 2. PRICING
+                    const cardPricing = document.createElement('div'); cardPricing.className = 'item-card';
+                    cardPricing.innerHTML = cardHeader + `<label style="font-size: 0.8rem; color:var(--text-muted); margin-top: 10px;">Display Price:</label><div class="price-input-group"><input type="number" class="price-input" value="${item.sellPrice}" min="0" onchange="game.updateItemPrice(${item.id}, this.value)"></div>`;
+                    gridPricing.appendChild(cardPricing);
+
+                    // 3. REPAIR
+                    const cardRepair = document.createElement('div'); cardRepair.className = 'item-card';
+                    let repairContent = '';
+                    if (item.condition.name === "Mint") repairContent = `<div style="color: var(--accent-green); font-weight: bold; margin-top: 10px; text-align: center; padding: 10px; background: rgba(34, 197, 94, 0.1); border-radius: 6px;">Mint Condition ✨</div>`;
+                    else {
+                        const perfectMult = CONDITIONS.find(c => c.name === "Mint").mult;
+                        const perfectValue = (item.realValue / item.condition.mult) * perfectMult;
+                        const repairCost = Math.floor((perfectValue - item.realValue) * 0.4);
+                        repairContent = `<button class="btn-warning" style="margin-top: 10px; justify-content: center;" onclick="game.repairItem(${item.id})">🔧 Repair (${formatMoney(repairCost)})</button><div style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 5px;">Value after repair: <span style="color: var(--accent-blue)">${formatMoney(perfectValue)}</span></div>`;
+                    }
+                    cardRepair.innerHTML = cardHeader + repairContent; gridRepair.appendChild(cardRepair);
+                });
+            },
+
+            renderLeaderboard() {
+                const playerEntry = this.leaderboard.find(b => b.isPlayer);
+                if(playerEntry) playerEntry.value = this.getTotalValue();
+                this.leaderboard.sort((a, b) => b.value - a.value);
+
+                const list = document.getElementById('leaderboard-list'); list.innerHTML = '';
+                let displayBoard = this.leaderboard.slice(0, 10);
+                const playerIndex = this.leaderboard.findIndex(b => b.isPlayer);
+                if (playerIndex >= 10) { displayBoard[9] = this.leaderboard[playerIndex]; displayBoard[9].forcedRank = playerIndex + 1; }
+
+                displayBoard.forEach((entry, idx) => {
+                    const rank = entry.forcedRank || (idx + 1);
+                    const row = document.createElement('div'); row.className = `lb-item ${entry.isPlayer ? 'player-row' : ''}`;
+                    row.innerHTML = `<div class="lb-rank">#${rank}</div><div class="lb-name">${entry.name}</div><div class="lb-val">${formatMoney(entry.value)}</div>`;
+                    list.appendChild(row);
+                });
+            },
+
+            renderDatabase() {
+                const query = document.getElementById('db-search').value.toLowerCase();
+                const tbody = document.getElementById('db-table-body');
+                tbody.innerHTML = '';
+
+                const filtered = this.pawnTickets.filter(t => t.customerName.toLowerCase().includes(query)).reverse();
+                
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--text-muted);">No records found.</td></tr>`;
+                    return;
+                }
+
+                filtered.forEach(t => {
+                    let statusClass = '';
+                    if (t.status === 'Active') statusClass = 'status-aktif';
+                    else if (t.status === 'Redeemed') statusClass = 'status-geri';
+                    else if (t.status === 'Confiscated') statusClass = 'status-elkonuldu';
+                    else if (t.status === 'Sold Early') statusClass = 'status-erken';
+
+                    let teslimMetni = `Day ${t.deadlineDay}`;
+                    if (t.status === 'Active') {
+                        const kalan = t.deadlineDay - this.day;
+                        if (kalan < 0) teslimMetni += ` <br><span style="color:var(--accent-red)">(${Math.abs(kalan)}d Overdue)</span>`;
+                        else teslimMetni += ` <br><span style="color:var(--text-muted)">(${kalan}d Left)</span>`;
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-weight:bold; color:white;">${t.customerName}</td>
+                        <td>${t.itemName} <br><span style="font-size: 0.75rem; color:var(--accent-green);">${formatMoney(t.loanRequest)} ➔ ${formatMoney(t.repayAmount)}</span></td>
+                        <td>${teslimMetni}</td>
+                        <td><span class="status-badge ${statusClass}">${t.status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        };
+    </script>
+</body>
+</html>
