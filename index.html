@@ -517,9 +517,34 @@
 
         .tab-title { font-size: 1.5rem; margin-bottom: 5px; color: var(--accent-blue); border-bottom: 2px solid var(--panel-border); padding-bottom: 10px; }
 
+        /* --- RADYO (YENI) --- */
+        .desk-radio {
+            position: absolute;
+            bottom: 25%;
+            right: 40px;
+            font-size: 4.5rem;
+            cursor: pointer;
+            z-index: 5;
+            transition: transform 0.2s, filter 0.2s;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.6));
+        }
+        .desk-radio:hover { transform: scale(1.1); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)); }
+        .desk-radio.playing { animation: radioBounce 0.8s infinite alternate ease-in-out; }
+        
+        .radio-results {
+            max-height: 200px; overflow-y: auto; margin-top: 15px; text-align: left;
+            background: var(--bg-color); border-radius: 6px; padding: 5px; border: 1px solid var(--panel-border);
+        }
+        .radio-station {
+            padding: 10px; border-bottom: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center;
+        }
+        .radio-station:hover { background: rgba(255,255,255,0.05); }
+        .radio-controls { margin-top: 20px; padding: 15px; background: #0f172a; border-radius: 8px; border: 1px solid var(--accent-blue); }
+
         @keyframes workBob { 0% { transform: translateY(0); } 100% { transform: translateY(-12px); } }
         @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
         @keyframes bounceIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
+        @keyframes radioBounce { 0% { transform: translateY(0) scale(1) rotate(0deg); } 100% { transform: translateY(-8px) scale(1.05) rotate(5deg); } }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
@@ -668,6 +693,9 @@
 
                         <!-- NEW: Staff Area -->
                         <div class="staff-area" id="staff-area"></div>
+
+                        <!-- NEW: Radyo Makinesi -->
+                        <div class="desk-radio" id="desk-radio" onclick="game.openRadio()" title="Radio / Music Player">📻</div>
 
                         <div class="customer-area">
                             <div id="customer-view" style="display: none; text-align: center;">
@@ -864,6 +892,37 @@
         </div>
     </div>
 
+    <!-- Radyo Menüsü Modal -->
+    <div class="modal-overlay" id="radio-modal">
+        <div class="modal-content" style="width: 450px;">
+            <div class="modal-title" style="color: var(--accent-blue);">📻 Internet Radio</div>
+            <div class="modal-text" style="margin-bottom: 15px; font-size: 0.9rem;">
+                Type a genre or channel name for background music (e.g., Jazz, Lofi, Rock, Pop)
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="radio-search" class="setup-input" style="margin-bottom: 0;" placeholder="Search Music/Channel...">
+                <button class="btn-primary" onclick="game.searchRadio()">Search</button>
+            </div>
+
+            <div class="radio-results" id="radio-results">
+                <div style="padding: 10px; color: var(--text-muted); text-align: center;">Type something to search...</div>
+            </div>
+
+            <div class="radio-controls">
+                <div style="font-weight: bold; margin-bottom: 10px; color: var(--accent-yellow); text-align: center;" id="radio-now-playing">Now Playing: None</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-danger" style="padding: 8px 15px;" onclick="game.stopRadio()">⏹️ Stop</button>
+                    <span style="font-size: 1.2rem;">🔉</span>
+                    <input type="range" id="radio-volume" min="0" max="1" step="0.05" value="0.3" onchange="game.changeRadioVolume(this.value)" style="flex: 1; cursor: pointer;">
+                    <span style="font-size: 1.2rem;">🔊</span>
+                </div>
+            </div>
+
+            <button class="btn-warning" style="width: 100%; margin-top: 15px; justify-content: center;" onclick="document.getElementById('radio-modal').classList.remove('active')">Close</button>
+        </div>
+    </div>
+
     <script>
         // --- DATA & CONFIG ---
         const FIRST_NAMES = ["James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph", "Thomas", "Charles", "Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen", "Christopher", "Daniel", "Matthew", "Anthony", "Mark", "Donald", "Steven", "Paul", "Andrew", "Joshua"];
@@ -930,6 +989,10 @@
         const formatMoney = (amount) => `$${Math.floor(amount).toLocaleString('en-US')}`;
         const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         
+        // --- GLOBAL RADIO PLAYER ---
+        const radioPlayer = new Audio();
+        radioPlayer.volume = 0.3;
+
         const formatDate = (d) => {
             const day = d.getDate().toString().padStart(2, '0');
             const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -1185,6 +1248,82 @@
                 document.getElementById('rview-' + tabId).classList.add('active');
                 
                 if(tabId === 'database') this.renderDatabase();
+            },
+
+            // --- YENI RADYO FONKSIYONLARI ---
+            openRadio() {
+                sfx.click();
+                document.getElementById('radio-modal').classList.add('active');
+            },
+
+            async searchRadio() {
+                const query = document.getElementById('radio-search').value.trim();
+                const resultsBox = document.getElementById('radio-results');
+                
+                if (!query) return;
+                
+                sfx.click();
+                resultsBox.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--accent-yellow);">Searching... ⏳ (Finding stations online)</div>';
+                
+                try {
+                    // Global açık kaynak radyo API'si (Radio Browser)
+                    const res = await fetch(`https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(query)}&limit=15&hidebroken=true`);
+                    const data = await res.json();
+                    
+                    resultsBox.innerHTML = '';
+                    if (data.length === 0) {
+                        resultsBox.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--accent-red);">No stations found. Try a different keyword (e.g., Lofi, Jazz).</div>';
+                        return;
+                    }
+
+                    data.forEach(station => {
+                        const row = document.createElement('div');
+                        row.className = 'radio-station';
+                        // Tırnak işaretlerini güvenli hale getirmek için escape yapıyoruz
+                        const safeName = station.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        row.innerHTML = `
+                            <div style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px;">
+                                <strong style="color: white;">${station.name}</strong><br>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">${station.country || 'Global'} - ${station.tags ? station.tags.substring(0, 30) + '...' : ''}</span>
+                            </div>
+                            <button class="btn-success" style="padding: 5px 10px; font-size: 0.8rem; border-radius: 4px;" onclick="game.playRadio('${station.url_resolved}', '${safeName}')">▶️ Play</button>
+                        `;
+                        resultsBox.appendChild(row);
+                    });
+                    
+                } catch (err) {
+                    resultsBox.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--accent-red);">Connection error! Please check your internet connection.</div>';
+                }
+            },
+
+            playRadio(url, name) {
+                sfx.click();
+                radioPlayer.src = url;
+                radioPlayer.play().then(() => {
+                    document.getElementById('radio-now-playing').innerText = 'Now Playing: ' + name;
+                    document.getElementById('desk-radio').classList.add('playing');
+                    
+                    // Müziğin başladığını bildiren efekt
+                    const deskObj = document.getElementById('desk-radio').getBoundingClientRect();
+                    spawnParticle('🎵', 'positive', deskObj.left + 20, deskObj.top);
+                    setTimeout(() => spawnParticle('🎶', 'positive', deskObj.left + 40, deskObj.top - 20), 400);
+
+                }).catch(e => {
+                    alert("This station is currently unavailable. This usually happens when the station is offline. Please try another one from the list.");
+                    this.stopRadio();
+                });
+            },
+
+            stopRadio() {
+                sfx.click();
+                radioPlayer.pause();
+                radioPlayer.src = '';
+                document.getElementById('radio-now-playing').innerText = 'Now Playing: None';
+                document.getElementById('desk-radio').classList.remove('playing');
+            },
+
+            changeRadioVolume(val) {
+                radioPlayer.volume = val;
             },
 
             togglePause() {
