@@ -488,32 +488,19 @@
         }
         .shop-shelves {
             position: absolute; top: 0; left: 0; width: 100%; height: 45%;
-            opacity: 0.4; transition: all 0.5s ease;
+            background-image: linear-gradient(90deg, transparent 95%, rgba(0,0,0,0.2) 100%), linear-gradient(#3e2723 15px, transparent 15px);
+            background-size: 150px 100px; opacity: 0.4;
         }
         .shop-counter {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 25%;
-            box-shadow: 0 -15px 30px rgba(0,0,0,0.6);
+            background: linear-gradient(to bottom, #5d4037 0%, #3e2723 100%);
+            border-top: 8px solid #4e342e; box-shadow: 0 -15px 30px rgba(0,0,0,0.6);
             display: flex; justify-content: center; align-items: flex-start; padding-top: 15px;
-            z-index: 3; transition: all 0.5s ease;
+            z-index: 3;
         }
         .customer-area {
             position: relative; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 100%; padding-bottom: 15%; /* space for counter */
-        }
-
-        /* --- VISUAL UPGRADES CSS --- */
-        .shelf-lv0 { background-image: linear-gradient(90deg, transparent 95%, rgba(0,0,0,0.2) 100%), linear-gradient(#3e2723 15px, transparent 15px); background-size: 150px 100px; }
-        .shelf-lv1 { background-image: linear-gradient(90deg, transparent 95%, rgba(255,255,255,0.05) 100%), linear-gradient(#475569 10px, transparent 10px); background-size: 120px 120px; }
-        .shelf-lv2 { background-image: linear-gradient(90deg, transparent 98%, rgba(56,189,248,0.5) 100%), linear-gradient(rgba(56,189,248,0.5) 5px, transparent 5px); background-size: 200px 150px; box-shadow: inset 0 0 30px rgba(56,189,248,0.2); opacity: 0.7 !important; }
-
-        .counter-lv0 { background: linear-gradient(to bottom, #5d4037 0%, #3e2723 100%); border-top: 8px solid #4e342e; }
-        .counter-lv1 { background: linear-gradient(to bottom, #e2e8f0 0%, #94a3b8 100%); border-top: 8px solid #f8fafc; }
-        .counter-lv2 { background: linear-gradient(to bottom, #7f1d1d 0%, #450a0a 100%); border-top: 8px solid #991b1b; box-shadow: 0 -15px 30px rgba(0,0,0,0.8), inset 0 5px 15px rgba(255,255,255,0.1) !important; }
-
-        .desk-item-display { 
-            position: absolute; top: -55px; right: 15%; font-size: 4rem; 
-            filter: drop-shadow(2px 5px 5px rgba(0,0,0,0.6)); z-index: 10; 
-            transition: all 0.3s;
         }
         
         .waiting-queue { position: absolute; left: 30px; bottom: 25%; z-index: 3; display: flex; }
@@ -664,7 +651,6 @@
             <button class="nav-btn" onclick="game.switchTab('pricing')" id="nav-pricing">🏷️ Pricing</button>
             <button class="nav-btn" onclick="game.switchTab('repair')" id="nav-repair">🔧 Repair Service</button>
             <button class="nav-btn" onclick="game.switchTab('business')" id="nav-business">📊 Business</button>
-            <button class="nav-btn" onclick="game.switchTab('upgrades')" id="nav-upgrades" style="color: var(--accent-yellow);">🛠️ Upgrades</button>
         </nav>
 
         <main>
@@ -674,7 +660,7 @@
                 <!-- TAB 1: SHOP (DESK) -->
                 <div id="view-shop" class="view-panel active">
                     <div class="shop-interior" id="desk-area">
-                        <div class="shop-shelves shelf-lv0" id="visual-shelves"></div>
+                        <div class="shop-shelves"></div>
                         <div class="desk-title" style="color: white; text-shadow: 1px 1px 3px black; z-index: 5; font-size: 1rem;">Customer Desk (<span id="queue-display">0</span> left)</div>
                         
                         <!-- NEW: Waiting Queue Visual -->
@@ -700,9 +686,7 @@
                                 <button class="btn-primary" onclick="game.nextCustomer()" style="margin: 0 auto; font-size: 1.1rem; padding: 12px 24px;">Call Next Customer</button>
                             </div>
                         </div>
-                        <div class="shop-counter counter-lv0" id="visual-counter">
-                            <div class="desk-item-display" id="visual-desk-item"></div>
-                        </div>
+                        <div class="shop-counter"></div>
                     </div>
                 </div>
 
@@ -797,16 +781,6 @@
                         </div>
                     </div>
 
-                </div>
-
-                <!-- TAB 6: SHOP UPGRADES -->
-                <div id="view-upgrades" class="view-panel">
-                    <div class="tab-title" style="color: var(--accent-yellow);">🛠️ Shop Customization & Upgrades</div>
-                    <p style="color: var(--text-muted); margin-bottom: 20px;">Upgrade your shop's appearance. Visual upgrades show your prestige to the world.</p>
-                    
-                    <div class="dashboard-grid" id="upgrades-container">
-                        <!-- Upgrades injected via JS -->
-                    </div>
                 </div>
 
             </div>
@@ -1040,28 +1014,6 @@
             reputation: 10.0, 
             bankDebt: 0, 
 
-            // Shop Upgrades State
-            upgradesData: {
-                shelves: [
-                    { level: 0, name: "Basic Wood", cost: 0 },
-                    { level: 1, name: "Industrial Metal", cost: 2000 },
-                    { level: 2, name: "Neon Glass Display", cost: 10000 }
-                ],
-                counter: [
-                    { level: 0, name: "Old Wood", cost: 0 },
-                    { level: 1, name: "Polished Marble", cost: 3500 },
-                    { level: 2, name: "Executive Mahogany", cost: 15000 }
-                ],
-                deskItem: [
-                    { level: 0, name: "None", cost: 0, icon: "" },
-                    { level: 1, name: "Vintage Register", cost: 500, icon: "📠" },
-                    { level: 2, name: "Lucky Cat", cost: 2500, icon: "🐱" },
-                    { level: 3, name: "Modern POS System", cost: 5000, icon: "💻" },
-                    { level: 4, name: "Gold Bullion", cost: 25000, icon: "🪙" }
-                ]
-            },
-            currentUpgrades: { shelves: 0, counter: 0, deskItem: 0 },
-
             // Time & Date System
             currentDate: new Date(2026, 1, 28),
             currentTime: 360, // 06:00 AM
@@ -1097,7 +1049,6 @@
                     staffAvatars: this.staffAvatars,
                     reputation: this.reputation,
                     bankDebt: this.bankDebt,
-                    currentUpgrades: this.currentUpgrades,
                     currentDate: this.currentDate.toISOString(),
                     currentTime: this.currentTime
                 };
@@ -1126,7 +1077,6 @@
                     this.staffAvatars = data.staffAvatars || [];
                     this.reputation = data.reputation;
                     this.bankDebt = data.bankDebt || 0;
-                    if(data.currentUpgrades) this.currentUpgrades = data.currentUpgrades;
                     this.currentDate = new Date(data.currentDate);
                     this.currentTime = data.currentTime;
 
@@ -1135,7 +1085,6 @@
                     
                     this.calculateDailyCustomers();
                     this.generateQueue();
-                    this.applyShopVisuals();
                     this.updateUI();
                     this.renderLeaderboard();
 
@@ -1224,9 +1173,6 @@
                 if (tabId === 'inventory' || tabId === 'pricing' || tabId === 'repair') {
                     this.renderInventoryTabs();
                 }
-                if (tabId === 'upgrades') {
-                    this.renderUpgradesTab();
-                }
             },
 
             setRightTab(tabId) {
@@ -1280,58 +1226,11 @@
                 
                 this.calculateDailyCustomers();
                 this.generateQueue();
-                this.applyShopVisuals();
                 this.updateUI();
                 this.renderLeaderboard();
 
                 if (this.gameLoop) clearInterval(this.gameLoop);
                 this.gameLoop = setInterval(() => this.tick(), 1500);
-            },
-
-            buyUpgrade(category, levelIndex) {
-                const upgradeConf = this.upgradesData[category][levelIndex];
-                
-                if (this.currentUpgrades[category] >= levelIndex) {
-                    return; // Already owned
-                }
-                if (this.currentUpgrades[category] < levelIndex - 1) {
-                    sfx.buzzer();
-                    alert("You must buy the previous upgrade level first!");
-                    return;
-                }
-
-                if (this.cash >= upgradeConf.cost) {
-                    sfx.cash();
-                    this.cash -= upgradeConf.cost;
-                    this.currentUpgrades[category] = levelIndex;
-                    
-                    const rect = document.getElementById('nav-upgrades').getBoundingClientRect();
-                    spawnParticle(`-${formatMoney(upgradeConf.cost)}`, 'negative', rect.left + 50, rect.bottom + 20);
-                    spawnParticle(`Upgraded!`, 'positive', rect.left + 50, rect.bottom + 40);
-
-                    this.applyShopVisuals();
-                    this.updateUI();
-                    this.renderUpgradesTab();
-                } else {
-                    sfx.buzzer();
-                    alert(`Not enough cash! You need ${formatMoney(upgradeConf.cost)}.`);
-                }
-            },
-
-            applyShopVisuals() {
-                // Apply Shelves
-                const shelvesEl = document.getElementById('visual-shelves');
-                shelvesEl.className = `shop-shelves shelf-lv${this.currentUpgrades.shelves}`;
-
-                // Apply Counter
-                const counterEl = document.getElementById('visual-counter');
-                // preserve inner elements by just replacing class
-                counterEl.className = `shop-counter counter-lv${this.currentUpgrades.counter}`;
-
-                // Apply Desk Item
-                const deskItemEl = document.getElementById('visual-desk-item');
-                const deskData = this.upgradesData.deskItem[this.currentUpgrades.deskItem];
-                deskItemEl.innerText = deskData.icon;
             },
 
             // MAIN REAL-TIME LOOP
@@ -2025,9 +1924,6 @@
                 if (document.activeElement && document.activeElement.tagName !== 'INPUT') {
                     this.renderInventoryTabs();
                     this.renderBusinessTab();
-                    if(document.getElementById('view-upgrades').classList.contains('active')) {
-                        this.renderUpgradesTab();
-                    }
                 }
             },
             
@@ -2056,48 +1952,6 @@
                 if (fireBtn) {
                     fireBtn.style.display = this.employees > 0 ? 'flex' : 'none';
                 }
-            },
-
-            renderUpgradesTab() {
-                const container = document.getElementById('upgrades-container');
-                if (!container) return;
-                container.innerHTML = '';
-
-                const renderCategory = (categoryKey, title, icon) => {
-                    const upgradesList = this.upgradesData[categoryKey];
-                    const currentLvl = this.currentUpgrades[categoryKey];
-                    
-                    const nextUpgrade = upgradesList[currentLvl + 1];
-
-                    let contentHtml = '';
-                    if (nextUpgrade) {
-                        contentHtml = `
-                            <div style="font-size: 1.1rem; color: white; margin: 10px 0;">Next: <strong>${nextUpgrade.name}</strong></div>
-                            <div style="font-size: 1.3rem; color: var(--accent-red); font-weight: bold; margin-bottom: 15px;">Cost: ${formatMoney(nextUpgrade.cost)}</div>
-                            <button class="btn-primary" style="width: 100%; justify-content: center;" onclick="game.buyUpgrade('${categoryKey}', ${currentLvl + 1})">Buy Upgrade</button>
-                        `;
-                    } else {
-                        contentHtml = `
-                            <div style="color: var(--accent-green); font-size: 1.2rem; font-weight: bold; margin-top: 20px; padding: 10px; background: rgba(34,197,94,0.1); border-radius: 6px;">MAX LEVEL REACHED ✅</div>
-                        `;
-                    }
-
-                    const card = document.createElement('div');
-                    card.className = 'dash-card';
-                    card.style.borderColor = 'var(--accent-blue)';
-                    card.innerHTML = `
-                        <div class="dash-icon">${icon}</div>
-                        <div class="dash-title" style="color: var(--accent-yellow); font-size: 1.1rem;">${title}</div>
-                        <div style="color: var(--text-muted); font-size: 0.9rem; margin-top: 5px;">Current: ${upgradesList[currentLvl].name}</div>
-                        <div style="width: 100%; border-top: 1px solid var(--panel-border); margin: 15px 0;"></div>
-                        ${contentHtml}
-                    `;
-                    container.appendChild(card);
-                };
-
-                renderCategory('shelves', 'Wall Shelves', '🗄️');
-                renderCategory('counter', 'Front Counter', '🪵');
-                renderCategory('deskItem', 'Desk Decoration', '📠');
             },
 
             renderQueue() {
