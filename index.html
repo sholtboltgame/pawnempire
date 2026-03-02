@@ -1266,13 +1266,13 @@
                 resultsBox.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--accent-yellow);">Searching... ⏳ (Finding stations online)</div>';
                 
                 try {
-                    // Global açık kaynak radyo API'si (Radio Browser)
-                    const res = await fetch(`https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(query)}&limit=15&hidebroken=true`);
+                    // YENİ: &is_https=true eklendi. Sadece güvenli (HTTPS) radyo istasyonlarını getirecek!
+                    const res = await fetch(`https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(query)}&limit=15&hidebroken=true&is_https=true`);
                     const data = await res.json();
                     
                     resultsBox.innerHTML = '';
                     if (data.length === 0) {
-                        resultsBox.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--accent-red);">No stations found. Try a different keyword (e.g., Lofi, Jazz).</div>';
+                        resultsBox.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--accent-red);">No HTTPS stations found. Try a different keyword (e.g., Lofi, Jazz).</div>';
                         return;
                     }
 
