@@ -380,6 +380,34 @@
         .modal-text { font-size: 1.1rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; }
         .expense-text { color: var(--accent-red); font-weight: bold; font-size: 1.2rem; margin: 15px 0; display: block; }
 
+        /* --- FİŞ (RECEIPT) UI --- */
+        .receipt {
+            background: #fdfdfd;
+            color: #111827;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+            border-radius: 4px;
+            text-align: left;
+            margin: 15px auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            font-size: 0.95rem;
+            max-width: 320px;
+            border-left: 2px dashed #cbd5e1;
+            border-right: 2px dashed #cbd5e1;
+            position: relative;
+        }
+        .receipt::before, .receipt::after {
+            content: ''; position: absolute; left: 0; width: 100%; height: 5px; background-size: 10px 10px;
+        }
+        .receipt::before {
+            top: -5px; background-image: radial-gradient(circle at 5px 0, transparent 6px, #fdfdfd 7px);
+        }
+        .receipt::after {
+            bottom: -5px; background-image: radial-gradient(circle at 5px 10px, transparent 6px, #fdfdfd 7px);
+        }
+        .receipt-line { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .receipt-total { border-top: 1px dashed #334155; padding-top: 8px; margin-top: 10px; font-weight: bold; font-size: 1.1rem; }
+
         /* --- PARTICLES --- */
         .particle {
             position: absolute; font-weight: bold; font-size: 1.2rem; pointer-events: none; z-index: 50;
@@ -491,6 +519,18 @@
             background-image: linear-gradient(90deg, transparent 95%, rgba(0,0,0,0.2) 100%), linear-gradient(#3e2723 15px, transparent 15px);
             background-size: 150px 100px; opacity: 0.4;
         }
+        
+        /* NEW: Raftaki Eşyalar İçin CSS */
+        .shelf-items {
+            position: absolute; top: 20px; left: 0; width: 100%; height: 42%;
+            display: flex; flex-wrap: wrap; align-content: flex-start; gap: 15px 30px;
+            padding: 10px 40px; z-index: 2; overflow: hidden; pointer-events: none;
+        }
+        .shelf-item-visual {
+            font-size: 2.5rem; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.8));
+            animation: bounceIn 0.4s ease-out; transition: all 0.3s;
+        }
+
         .shop-counter {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 25%;
             background: linear-gradient(to bottom, #5d4037 0%, #3e2723 100%);
@@ -686,6 +726,10 @@
                 <div id="view-shop" class="view-panel active">
                     <div class="shop-interior" id="desk-area">
                         <div class="shop-shelves"></div>
+                        
+                        <!-- NEW: Raftaki Eşyalar -->
+                        <div class="shelf-items" id="shelf-items"></div>
+
                         <div class="desk-title" style="color: white; text-shadow: 1px 1px 3px black; z-index: 5; font-size: 1rem;">Customer Desk (<span id="queue-display">0</span> left)</div>
                         
                         <!-- NEW: Waiting Queue Visual -->
@@ -854,14 +898,18 @@
 
     <!-- End of Day Modal -->
     <div class="modal-overlay" id="eod-modal">
-        <div class="modal-content">
+        <div class="modal-content" style="width: 420px;">
             <div class="modal-title">🌙 Day Ended!</div>
             <div class="modal-text">
-                <p>You closed the shop for today. Time to pay rent, electricity, and any loan interests.</p>
-                <span class="expense-text" id="expense-display">-$50 Expenses</span>
-                <p style="font-size: 0.9rem; margin-top: 10px;">Total Value: <strong id="eod-value-display" style="color:var(--accent-blue)">$1000</strong></p>
+                <p style="color: var(--text-muted); margin-bottom: 10px;">Shift is over. Here is your daily expense report:</p>
+                
+                <div id="expense-display">
+                    <!-- Receipt injected here -->
+                </div>
+
+                <p style="font-size: 0.95rem; margin-top: 15px;">Total Shop Value: <strong id="eod-value-display" style="color:var(--accent-blue)">$1000</strong></p>
             </div>
-            <button class="btn-primary" style="width: 100%; justify-content: center;" onclick="game.startNextDay()">Start Next Day ☀️</button>
+            <button class="btn-primary" style="width: 100%; justify-content: center; padding: 15px; font-size: 1.1rem;" onclick="game.startNextDay()">Start Next Day ☀️</button>
         </div>
     </div>
 
@@ -1076,6 +1124,11 @@
             staffAvatars: [],
             reputation: 10.0, 
             bankDebt: 0, 
+            
+            // Economy Tracking
+            dailyRevenue: 0,
+            dailyItemCost: 0,
+            todayTotalExpense: 0,
 
             // Time & Date System
             currentDate: new Date(2026, 1, 28),
@@ -1112,6 +1165,9 @@
                     staffAvatars: this.staffAvatars,
                     reputation: this.reputation,
                     bankDebt: this.bankDebt,
+                    dailyRevenue: this.dailyRevenue,
+                    dailyItemCost: this.dailyItemCost,
+                    todayTotalExpense: this.todayTotalExpense,
                     currentDate: this.currentDate.toISOString(),
                     currentTime: this.currentTime
                 };
@@ -1140,6 +1196,9 @@
                     this.staffAvatars = data.staffAvatars || [];
                     this.reputation = data.reputation;
                     this.bankDebt = data.bankDebt || 0;
+                    this.dailyRevenue = data.dailyRevenue || 0;
+                    this.dailyItemCost = data.dailyItemCost || 0;
+                    this.todayTotalExpense = data.todayTotalExpense || 0;
                     this.currentDate = new Date(data.currentDate);
                     this.currentTime = data.currentTime;
 
@@ -1437,6 +1496,7 @@
                         
                         if (this.cash >= buyPrice) {
                             this.cash -= buyPrice;
+                            this.dailyItemCost += buyPrice; // Giderlere ekle
                             this.inventory.push({
                                 id: Date.now() + Math.random(),
                                 name: baseItem.name,
@@ -1467,6 +1527,7 @@
                             const sellPrice = Math.floor(item.sellPrice * (0.9 + Math.random() * 0.1)); // Sells close to markup
                             
                             this.cash += sellPrice;
+                            this.dailyRevenue += sellPrice; // Gelirlere ekle
                             this.inventory = this.inventory.filter(inv => inv.id !== item.id);
                             sfx.cash();
                             spawnParticle(`+$${sellPrice}`, 'positive', spawnX, spawnY);
@@ -1550,12 +1611,6 @@
 
             getMaxLoan() {
                 return Math.floor(2000 + Math.pow(this.reputation / 100, 2) * 198000);
-            },
-
-            getDailyExpense() {
-                let base = 40 + (this.day * 10);
-                let interest = Math.floor(this.bankDebt * 0.01);
-                return base + interest;
             },
 
             // --- DAY CYCLE ---
@@ -1659,23 +1714,69 @@
                 document.getElementById('customer-view').style.display = 'none';
                 document.getElementById('no-customer-view').style.display = 'none';
                 
-                let expense = this.getDailyExpense();
+                // Saat hesaplaması (Kaç saat açık kaldı?)
+                let hoursOpen = Math.ceil((this.currentTime - 360) / 60);
+                if (hoursOpen < 1) hoursOpen = 1;
+
+                // Gider Hesaplamaları
+                let rent = 40 + (this.day * 10);
+                let electricity = hoursOpen * 50; // Saati 50 dolar
+                let wifi = 34; // Günlük 34 dolar
+                let general = 45; // Günlük masraf 45 dolar
                 let interest = Math.floor(this.bankDebt * 0.01);
-                let baseKira = 40 + (this.day * 10);
                 
-                let expenseText = `-${formatMoney(baseKira)} Rent/Bills`;
-
-                if (interest > 0) {
-                    expenseText += `<br><span style="color: var(--accent-red); font-size: 1rem;">-${formatMoney(interest)} Bank Loan Interest (1%)</span>`;
+                // Kar & Vergi Hesaplaması
+                let dailyProfit = this.dailyRevenue - this.dailyItemCost;
+                let tax = 0;
+                if (dailyProfit > 0) {
+                    tax = Math.floor(dailyProfit * 0.23); // %23 Vergi
                 }
 
-                if (this.employees > 0 && this.day % 30 === 0) {
-                    const totalSalaries = this.employees * 2500;
-                    expense += totalSalaries;
-                    expenseText += `<br><span style="color: var(--accent-red); font-size: 1rem;">-${formatMoney(totalSalaries)} Staff Salary (${this.employees} Person(s))</span>`;
+                // Maaşlar
+                let staffSalaries = 0;
+                let isPayday = (this.employees > 0 && this.day % 30 === 0);
+                if (isPayday) {
+                    staffSalaries = this.employees * 2500;
                 }
 
-                document.getElementById('expense-display').innerHTML = expenseText;
+                // Toplam Gider
+                let totalExpense = rent + electricity + wifi + general + interest + tax + staffSalaries;
+                this.todayTotalExpense = totalExpense; // Sonraki gün kesmek için kaydet
+
+                // Fiş HTML'i oluşturma
+                let receiptHtml = `
+                    <div class="receipt">
+                        <div style="text-align:center; font-weight:bold; margin-bottom: 10px; font-size:1.1rem; border-bottom: 2px dashed #000; padding-bottom: 10px;">
+                            PAWN EMPIRE INVOICE<br>
+                            <span style="font-size: 0.8rem; font-weight: normal;">Day: ${this.day} | Open: ${hoursOpen}h</span>
+                        </div>
+                        
+                        <div style="margin-bottom: 10px; font-size: 0.8rem; border-bottom: 1px dashed #000; padding-bottom: 5px; color: #475569;">
+                            <div class="receipt-line"><span>Today's Cash In:</span><span>${formatMoney(this.dailyRevenue)}</span></div>
+                            <div class="receipt-line"><span>Today's Cash Out:</span><span>${formatMoney(this.dailyItemCost)}</span></div>
+                            <div class="receipt-line"><span style="font-weight:bold; color: #000;">Net Profit:</span><span style="font-weight:bold; color: #000;">${formatMoney(dailyProfit > 0 ? dailyProfit : 0)}</span></div>
+                        </div>
+
+                        <div class="receipt-line"><span>Shop Rent:</span><span>${formatMoney(rent)}</span></div>
+                        <div class="receipt-line"><span>Electricity ($50/h):</span><span>${formatMoney(electricity)}</span></div>
+                        <div class="receipt-line"><span>Wi-Fi Service:</span><span>${formatMoney(wifi)}</span></div>
+                        <div class="receipt-line"><span>General Supplies:</span><span>${formatMoney(general)}</span></div>
+                `;
+
+                if (interest > 0) receiptHtml += `<div class="receipt-line"><span>Bank Interest (1%):</span><span>${formatMoney(interest)}</span></div>`;
+                if (tax > 0) receiptHtml += `<div class="receipt-line"><span>Income Tax (23%):</span><span>${formatMoney(tax)}</span></div>`;
+                if (isPayday) receiptHtml += `<div class="receipt-line"><span>Staff Salaries (x${this.employees}):</span><span>${formatMoney(staffSalaries)}</span></div>`;
+
+                receiptHtml += `
+                        <div class="receipt-total receipt-line">
+                            <span>TOTAL DUE:</span>
+                            <span>${formatMoney(totalExpense)}</span>
+                        </div>
+                        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; font-weight: bold;">THANK YOU FOR YOUR BUSINESS</div>
+                    </div>
+                `;
+
+                document.getElementById('expense-display').innerHTML = receiptHtml;
                 document.getElementById('eod-value-display').innerText = formatMoney(this.getTotalValue());
                 
                 document.getElementById('eod-modal').classList.add('active');
@@ -1683,8 +1784,8 @@
 
             startNextDay() {
                 sfx.cash();
-                let expense = this.getDailyExpense();
-                if (this.employees > 0 && this.day % 30 === 0) { expense += (this.employees * 2500); }
+                
+                let expense = this.todayTotalExpense || 0;
                 this.cash -= expense;
                 
                 const cashRect = document.getElementById('cash-display').getBoundingClientRect();
@@ -1694,6 +1795,11 @@
 
                 document.getElementById('eod-modal').classList.remove('active');
                 
+                // Verileri sıfırla
+                this.dailyRevenue = 0;
+                this.dailyItemCost = 0;
+                this.todayTotalExpense = 0;
+
                 this.day++;
                 this.currentDate.setDate(this.currentDate.getDate() + 1);
                 this.currentTime = 360; // 06:00 AM
@@ -1779,6 +1885,8 @@
                     sfx.cash();
                     this.advanceTime(Math.max(1, randomInt(5, 10) - this.employees)); 
                     this.cash -= c.askingPrice;
+                    this.dailyItemCost += c.askingPrice; // Giderlere ekle
+
                     c.item.cost = c.askingPrice;
                     c.item.sellPrice = Math.floor(c.askingPrice * 1.5); 
                     this.inventory.push(c.item);
@@ -1797,6 +1905,7 @@
                     sfx.cash();
                     this.advanceTime(Math.max(1, randomInt(5, 10) - this.employees)); 
                     this.cash -= c.loanRequest;
+                    this.dailyItemCost += c.loanRequest; // Giderlere ekle
                     
                     c.item.cost = c.loanRequest;
                     c.item.sellPrice = 0; 
@@ -1838,6 +1947,7 @@
                     if (itemIndex > -1) {
                         sfx.cash();
                         this.cash += t.repayAmount;
+                        this.dailyRevenue += t.repayAmount; // Gelirlere ekle
                         this.inventory.splice(itemIndex, 1);
                         t.status = 'Redeemed';
                         
@@ -1954,6 +2064,8 @@
 
                 this.inventory = this.inventory.filter(i => i.id !== c.item.id);
                 this.cash += finalPrice;
+                this.dailyRevenue += finalPrice; // Gelirlere ekle
+                
                 const rect = document.getElementById('cash-display').getBoundingClientRect();
                 spawnParticle(`+${formatMoney(finalPrice)}`, 'positive', rect.left, rect.bottom + 20);
 
@@ -2059,6 +2171,7 @@
             updateUI() {
                 this.updateHUD();
                 this.renderStaff();
+                this.renderShelves();
                 
                 if (document.activeElement && document.activeElement.tagName !== 'INPUT') {
                     this.renderInventoryTabs();
@@ -2136,6 +2249,32 @@
                     more.style.textShadow = '1px 1px 2px black';
                     more.innerText = `+${this.staffAvatars.length - 6}`;
                     staffEl.appendChild(more);
+                }
+            },
+
+            renderShelves() {
+                const container = document.getElementById('shelf-items');
+                if(!container) return;
+                container.innerHTML = '';
+                
+                // Rafların taşmaması için en fazla 24 eşyayı görsel olarak gösteriyoruz
+                const displayLimit = Math.min(this.inventory.length, 24);
+                
+                for(let i = 0; i < displayLimit; i++) {
+                    const item = this.inventory[i];
+                    const el = document.createElement('div');
+                    el.className = 'shelf-item-visual';
+                    el.innerText = item.icon || '📦';
+                    
+                    // Rastgele hafif açılı dursunlar (daha doğal görünüm)
+                    el.style.transform = `rotate(${randomInt(-15, 15)}deg)`;
+                    
+                    // Rehin bırakılmış (pawned) eşyalara kırmızı bir parlama efekti verelim
+                    if(item.isPawned) {
+                        el.style.filter = 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.9))';
+                    }
+                    
+                    container.appendChild(el);
                 }
             },
 
