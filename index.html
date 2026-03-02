@@ -647,7 +647,7 @@
             <div class="stat-group">
                 <div class="stat-box" title="Date and Time">
                     <span class="stat-icon">🕒</span>
-                    <span id="date-display" style="font-size: 0.95rem; color: var(--text-muted); margin-right: 10px;">28.02.2026</span>
+                    <span id="date-display" style="font-size: 0.95rem; color: var(--text-muted); margin-right: 10px;">02/28/2026</span>
                     <span id="clock-display" style="color: #38bdf8; min-width: 80px; display: inline-block;">06:00 AM</span>
                 </div>
                 <div class="stat-box" title="Current Day">
@@ -916,11 +916,27 @@
             { name: "Electric Guitar", icon: "🎸", base: 600 },
             { name: "Leather Jacket", icon: "🧥", base: 200 },
             { name: "Antique Vase", icon: "🏺", base: 450 },
+            // Furniture
+            { name: "Vintage Sofa", icon: "🛋️", base: 800, isFurniture: true },
+            { name: "Oak Dining Table", icon: "🪑", base: 1200, isFurniture: true },
+            { name: "Modern Bookshelf", icon: "📚", base: 350, isFurniture: true },
+            { name: "Leather Armchair", icon: "🪑", base: 900, isFurniture: true },
+            { name: "King Size Bed Frame", icon: "🛏️", base: 1500, isFurniture: true },
+            // Next-Gen Tech (2025/2026 Models)
+            { name: "2025 Smartphone Pro", icon: "📱", base: 1200, isTech: true, fixedYear: 2025 },
+            { name: "2026 Ultra Slim Laptop", icon: "💻", base: 2200, isTech: true, fixedYear: 2026 },
+            { name: "2026 8K OLED TV", icon: "📺", base: 3500, isTech: true, fixedYear: 2026 },
+            { name: "2025 Smartwatch Series X", icon: "⌚", base: 600, isTech: true, fixedYear: 2025 },
+            { name: "2019 LED TV", icon: "📺", base: 400, isTech: true, fixedYear: 2019 }, // Eski model TV örneği
+            { name: "Next-Gen VR Headset", icon: "🥽", base: 900, isTech: true, fixedYear: 2025 },
+            { name: "2025 Drone", icon: "🚁", base: 1500, isTech: true, fixedYear: 2025 },
             // Vehicles
             { name: "Sedan Car", icon: "🚗", base: 18000, isPrecious: true, isVehicle: true },
             { name: "Classic Sports Car", icon: "🏎️", base: 65000, isPrecious: true, isVehicle: true },
             { name: "Passenger Bus", icon: "🚌", base: 95000, isPrecious: true, isVehicle: true },
-            { name: "Tow Truck", icon: "🚛", base: 140000, isPrecious: true, isVehicle: true }
+            { name: "Tow Truck", icon: "🚛", base: 140000, isPrecious: true, isVehicle: true },
+            { name: "2026 Electric SUV", icon: "🚙", base: 55000, isPrecious: true, isVehicle: true, fixedYear: 2026 },
+            { name: "2025 Sports Bike", icon: "🏍️", base: 22000, isPrecious: true, isVehicle: true, fixedYear: 2025 }
         ];
 
         const CONDITIONS = [
@@ -1388,13 +1404,15 @@
                                 name: baseItem.name,
                                 icon: baseItem.icon,
                                 condition: CONDITIONS[1], // Employees generally buy "Good" items
-                                year: randomInt(1920, 2023),
+                                year: baseItem.fixedYear || randomInt(1920, 2024),
                                 wear: randomInt(10, 50),
                                 realValue: realValue,
                                 cost: buyPrice,
                                 sellPrice: Math.floor(buyPrice * 1.5), // Auto sets markup!
                                 isPrecious: baseItem.isPrecious || false,
                                 isVehicle: baseItem.isVehicle || false,
+                                isFurniture: baseItem.isFurniture || false,
+                                isTech: baseItem.isTech || false,
                                 isFake: false,
                                 scanned: true,
                                 isPawned: false
@@ -1444,9 +1462,36 @@
             },
 
             calculateDailyCustomers() {
-                let maxCustomers = 20 + Math.floor(this.reputation * 4.5);
-                if (this.reputation >= 95) { maxCustomers = 500; }
-                this.customersTotal = randomInt(10, maxCustomers) + (this.employees * 15);
+                let baseCount = 0;
+
+                if (this.day <= 90) {
+                    // İlk 3 ay (90 gün) kuralı: 
+                    // Gün sayısına göre taban müşteri (10'dan başlayıp yavaşça artar)
+                    let dayFactor = 10 + Math.floor(this.day * 0.6); // 1. gün: 10, 30. gün: ~28, 90. gün: ~64
+                    let repBonus = Math.floor(this.reputation * 0.2); // Nam seviyesi küçük bir katkı sağlar (Örn: %50 nam = +10 müşteri)
+                    
+                    baseCount = dayFactor + repBonus;
+
+                    // İlk 3 ayda ne olursa olsun işçiler hariç sınır 70'i geçemez
+                    if (baseCount > 70) baseCount = 70;
+                } else {
+                    // 3 Aydan sonra (90+ Gün): Nam seviyesinin kilidi açılır
+                    baseCount = 70 + Math.floor(this.reputation * 2);
+                    
+                    // İşletme efsaneleştiyse izdiham başlar
+                    if (this.reputation >= 95) { 
+                        baseCount = randomInt(300, 500); 
+                    }
+                }
+
+                // Günlük ufak bir rastgelelik (Kaos olmaması için sadece +/- %15 sapma)
+                let variance = Math.max(2, Math.floor(baseCount * 0.15));
+                let finalCustomers = randomInt(baseCount - variance, baseCount + variance);
+
+                // Her işçi kapasiteyi +15 arttırır
+                this.customersTotal = finalCustomers + (this.employees * 15);
+                this.customersTotal = Math.max(5, this.customersTotal); // Her halükarda dükkana en az 5 kişi gelir
+                
                 this.customersLeft = this.customersTotal;
             },
 
@@ -1533,7 +1578,7 @@
                 const baseItem = ITEMS[randomInt(0, ITEMS.length - 1)];
                 const condition = CONDITIONS[randomInt(0, CONDITIONS.length - 1)];
                 
-                const year = randomInt(1920, 2023);
+                const year = baseItem.fixedYear || randomInt(1920, 2024);
                 const wear = condition.name === "Poor" ? randomInt(60, 95) : (condition.name === "Good" ? randomInt(20, 59) : randomInt(0, 19));
                 const baseValue = baseItem.base + (this.day * 5);
                 const realValue = Math.floor(baseValue * condition.mult);
@@ -1552,6 +1597,8 @@
                     sellPrice: 0,
                     isPrecious: baseItem.isPrecious || false,
                     isVehicle: baseItem.isVehicle || false,
+                    isFurniture: baseItem.isFurniture || false,
+                    isTech: baseItem.isTech || false,
                     isFake: isFake,
                     scanned: false,
                     isPawned: false
