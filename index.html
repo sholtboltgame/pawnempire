@@ -715,8 +715,8 @@
                     <span class="stat-icon">💵</span>
                     <span id="cash-display">$1,000</span>
                 </div>
-                <div class="stat-box" title="Total Value (Cash + Items - Debt)">
-                    <span class="stat-icon">💎</span>
+                <div class="stat-box" title="Total Company Value (Cash + Items - Debt)">
+                    <span class="stat-icon">🏢</span>
                     <span id="value-display">$1,000</span>
                 </div>
             </div>
@@ -919,7 +919,7 @@
                         <div class="employee-info">
                             <h3 style="color: var(--accent-yellow); margin-bottom: 10px; font-size: 1.3rem;">Expert Clerks</h3>
                             <p style="color: var(--text-muted); line-height: 1.5;">
-                                Current Staff: <strong id="emp-count" style="color:white; font-size:1.2rem;">0</strong><br><br>
+                                Current Staff: <strong id="emp-count" style="color:white; font-size:1.2rem;">0 / 12</strong><br><br>
                                 <strong>Benefits:</strong> Each clerk operates autonomously in the background, making trades for you while you wait! Also increases capacity by +15.<br>
                                 <strong>Cost:</strong> <span style="color: var(--accent-red); font-weight: bold;" id="dash-wage">$9/hour</span> per clerk, paid daily.
                             </p>
@@ -1919,9 +1919,15 @@
                 let hoursOpen = Math.ceil((this.currentTime - 360) / 60);
                 if (hoursOpen < 1) hoursOpen = 1;
 
-                // Gider Hesaplamaları (Kira artık şehre göre çarpılıyor)
-                let rent = Math.floor((40 + (this.day * 10)) * this.rentMultiplier);
-                let electricity = hoursOpen * 50; // Saati 50 dolar
+                // Gider Hesaplamaları (Kira her gün 150$ artar ve şehrin çarpanıyla çarpılır)
+                let baseRent = 110 + ((this.day - 1) * 150);
+                let rent = Math.floor(baseRent * this.rentMultiplier);
+                
+                // ELEKTRİK ZAMMI: Her 30 günde bir saatlik ücret 50$ artar
+                let currentMonth = Math.floor((this.day - 1) / 30) + 1;
+                let hourlyElectricity = currentMonth * 50;
+                let electricity = hoursOpen * hourlyElectricity; 
+                
                 let wifi = 34; // Günlük 34 dolar
                 let general = 65; // Günlük masraf arttırıldı
                 let interest = Math.floor(this.bankDebt * 0.01);
@@ -1930,7 +1936,7 @@
                 let dailyProfit = this.dailyRevenue - this.dailyItemCost;
                 let tax = 0;
                 if (dailyProfit > 0) {
-                    tax = Math.floor(dailyProfit * 0.28); // Vergi %23'ten %28'e çıkarıldı
+                    tax = Math.floor(dailyProfit * 0.35); // Vergi %28'den %35'e çıkarıldı!
                 }
 
                 // Maaşlar (Saatlik ve Günlük Sisteme Geçildi)
@@ -1957,13 +1963,13 @@
                         </div>
 
                         <div class="receipt-line"><span>Shop Rent (x${this.rentMultiplier}):</span><span>${formatMoney(rent)}</span></div>
-                        <div class="receipt-line"><span>Electricity ($50/h):</span><span>${formatMoney(electricity)}</span></div>
+                        <div class="receipt-line"><span>Electricity ($${hourlyElectricity}/h):</span><span>${formatMoney(electricity)}</span></div>
                         <div class="receipt-line"><span>Wi-Fi Service:</span><span>${formatMoney(wifi)}</span></div>
                         <div class="receipt-line"><span>General Supplies:</span><span>${formatMoney(general)}</span></div>
                 `;
 
                 if (interest > 0) receiptHtml += `<div class="receipt-line"><span>Bank Interest (1%):</span><span>${formatMoney(interest)}</span></div>`;
-                if (tax > 0) receiptHtml += `<div class="receipt-line"><span>Income Tax (28%):</span><span>${formatMoney(tax)}</span></div>`;
+                if (tax > 0) receiptHtml += `<div class="receipt-line"><span>Income Tax (35%):</span><span>${formatMoney(tax)}</span></div>`;
                 if (staffSalaries > 0) receiptHtml += `<div class="receipt-line"><span>Staff (${this.employees}x ${hoursOpen}h @ $${hourlyWage}):</span><span>${formatMoney(staffSalaries)}</span></div>`;
 
                 receiptHtml += `
@@ -2326,6 +2332,11 @@
             },
 
             hireEmployee() {
+                if (this.employees >= 12) {
+                    this.toast("Maximum staff limit (12) reached!", "error");
+                    return;
+                }
+
                 sfx.success();
                 this.employees++;
                 
@@ -2393,7 +2404,8 @@
                 document.getElementById('dash-location').innerText = this.shopLocation.split(',')[0]; // Sadece şehir adı görünsün
                 document.getElementById('dash-days').innerText = this.day;
                 document.getElementById('dash-reputation').innerText = `${this.reputation}%`;
-                document.getElementById('emp-count').innerText = this.employees;
+                
+                document.getElementById('emp-count').innerText = `${this.employees} / 12`;
                 
                 document.getElementById('dash-max-loan').innerText = formatMoney(this.getMaxLoan());
                 document.getElementById('dash-debt').innerText = formatMoney(this.bankDebt);
@@ -2409,7 +2421,17 @@
                 const currentYear = this.currentDate.getFullYear();
                 const hourlyWage = 9 + ((currentYear - 2026) * 5);
                 document.getElementById('dash-wage').innerText = `$${hourlyWage}/hour`;
-                document.getElementById('btn-hire').innerHTML = `👨‍💼 Hire ($${hourlyWage}/h)`;
+                
+                const hireBtn = document.getElementById('btn-hire');
+                if (this.employees >= 12) {
+                    hireBtn.innerHTML = `👨‍💼 Max Limit Reached`;
+                    hireBtn.disabled = true;
+                    hireBtn.style.opacity = '0.5';
+                } else {
+                    hireBtn.innerHTML = `👨‍💼 Hire ($${hourlyWage}/h)`;
+                    hireBtn.disabled = false;
+                    hireBtn.style.opacity = '1';
+                }
 
                 // İşçi kovma butonunu sadece çalışan varsa göster
                 const fireBtn = document.getElementById('btn-fire');
