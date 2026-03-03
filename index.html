@@ -1440,6 +1440,29 @@
                 }
 
                 sfx.success();
+                
+                // --- YENİ OYUN İÇİN TÜM DEĞERLERİ SIFIRLA (RESET) ---
+                this.day = 1;
+                this.cash = 1000;
+                this.inventory = [];
+                this.pawnTickets = [];
+                this.employees = 0;
+                this.staffAvatars = [];
+                this.reputation = 10.0;
+                this.bankDebt = 0;
+                this.dailyRevenue = 0;
+                this.dailyItemCost = 0;
+                this.todayTotalExpense = 0;
+                this.currentDate = new Date(2026, 1, 28);
+                this.currentTime = 360;
+                this.nextAuctionDay = 5;
+                this.auctionDoneToday = false;
+                this.auctionState = 'waiting';
+                this.currentCustomer = null;
+                this.employeeTick = 0;
+                if (this.auctionLoop) { clearInterval(this.auctionLoop); this.auctionLoop = null; }
+                // ---------------------------------------------------
+
                 this.playerName = pName;
                 this.shopName = sName;
                 this.shopLocation = locSelect.value;
