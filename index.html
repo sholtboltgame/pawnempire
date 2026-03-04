@@ -1919,8 +1919,8 @@
                 let hoursOpen = Math.ceil((this.currentTime - 360) / 60);
                 if (hoursOpen < 1) hoursOpen = 1;
 
-                // Gider Hesaplamaları (Kira her gün 150$ artar ve şehrin çarpanıyla çarpılır)
-                let baseRent = 110 + ((this.day - 1) * 150);
+                // Gider Hesaplamaları (Kira her gün 45$ artar ve şehrin çarpanıyla çarpılır)
+                let baseRent = 110 + ((this.day - 1) * 45);
                 let rent = Math.floor(baseRent * this.rentMultiplier);
                 
                 // ELEKTRİK ZAMMI: Her 30 günde bir saatlik ücret 50$ artar
@@ -1939,9 +1939,8 @@
                     tax = Math.floor(dailyProfit * 0.35); // Vergi %28'den %35'e çıkarıldı!
                 }
 
-                // Maaşlar (Saatlik ve Günlük Sisteme Geçildi)
-                const currentYear = this.currentDate.getFullYear();
-                const hourlyWage = 9 + ((currentYear - 2026) * 5); // 2026'da $9, her yıl $5 artar.
+                // Maaşlar (Saatlik ve Aylık Zam Sistemi)
+                const hourlyWage = 80 + ((currentMonth - 1) * 25); // Başlangıç $80, her ay $25 artar
                 let staffSalaries = this.employees * hoursOpen * hourlyWage;
 
                 // Toplam Gider
@@ -2417,9 +2416,9 @@
                 if (netProfit < 0) { profitEl.className = 'dash-val val-red'; profitEl.style.color = 'var(--accent-red)'; } 
                 else { profitEl.className = 'dash-val val-green'; profitEl.style.color = 'var(--accent-green)'; }
 
-                // Saatlik Maaş Güncellemesi (Dinamik Yıl Hesabı)
-                const currentYear = this.currentDate.getFullYear();
-                const hourlyWage = 9 + ((currentYear - 2026) * 5);
+                // Saatlik Maaş Güncellemesi (Dinamik Ay Hesabı)
+                let currentMonth = Math.floor((this.day - 1) / 30) + 1;
+                const hourlyWage = 80 + ((currentMonth - 1) * 25);
                 document.getElementById('dash-wage').innerText = `$${hourlyWage}/hour`;
                 
                 const hireBtn = document.getElementById('btn-hire');
